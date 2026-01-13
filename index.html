@@ -52,26 +52,18 @@ const imgUrl = q.get("img");
 
 document.getElementById("img").src = imgUrl;
 
-async function share() {
-  const res = await fetch(imgUrl);
-  const blob = await res.blob();
-  const file = new File([blob], "image.jpg", { type: blob.type });
-
+function share() {
   const message =
-    `Hello,\n\nShared by ${dse}\nContact: ${dseMobile}`;
+    `Hello,\n\nShared by ${dse}\nContact: ${dseMobile}\n\n${imgUrl}`;
 
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    await navigator.share({
-      files: [file],
-      text: message,
-      url: `https://wa.me/${phone}`
-    });
-  } else {
-    alert("WhatsApp sharing not supported on this device");
-  }
+  const waUrl =
+    `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+  window.location.href = waUrl;
 }
 </script>
 
 </body>
 </html>
+
 
