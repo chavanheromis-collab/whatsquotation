@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Share Image</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #f4f4f4;
+  padding: 16px;
+}
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 12px;
+  max-width: 360px;
+  margin: auto;
+  text-align: center;
+}
+img {
+  width: 100%;
+  border-radius: 8px;
+}
+button {
+  margin-top: 12px;
+  width: 100%;
+  padding: 12px;
+  background: #25D366;
+  color: white;
+  border: none;
+  font-size: 16px;
+  border-radius: 6px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <img id="img">
+  <button onclick="share()">Share on WhatsApp</button>
+</div>
+
+<script>
+const q = new URLSearchParams(window.location.search);
+
+const phone = q.get("phone");
+const dse = q.get("dse");
+const dseMobile = q.get("dsemob");
+const imgUrl = q.get("img");
+
+document.getElementById("img").src = imgUrl;
+
+async function share() {
+  const res = await fetch(imgUrl);
+  const blob = await res.blob();
+  const file = new File([blob], "image.jpg", { type: blob.type });
+
+  const message =
+    `Hello,\n\nShared by ${dse}\nContact: ${dseMobile}`;
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({
+      files: [file],
+      text: message,
+      url: `https://wa.me/${phone}`
+    });
+  } else {
+    alert("WhatsApp sharing not supported on this device");
+  }
+}
+</script>
+
+</body>
+</html>
