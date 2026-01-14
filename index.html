@@ -1,58 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quotation Share</title>
 
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f2f2f2;
-    padding: 12px;
-  }
-  .controls {
-    max-width: 420px;
-    margin: auto;
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  select {
-    flex: 1;
-    padding: 8px;
-    font-size: 14px;
-  }
-  .gallery {
-    max-width: 420px;
-    margin: auto;
-  }
-  .card {
-    background: #fff;
-    border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 12px;
-    text-align: center;
-  }
-  .card img {
-    width: 100%;
-    border-radius: 8px;
-  }
-  .card button {
-    margin-top: 6px;
-    padding: 6px 14px;
-    font-size: 14px;
-    background: #25D366;
-    color: white;
-    border: none;
-    border-radius: 20px;
-  }
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  padding: 12px;
+}
+
+.controls {
+  max-width: 420px;
+  margin: auto;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+select {
+  flex: 1;
+  padding: 8px;
+  font-size: 14px;
+}
+
+.gallery {
+  max-width: 420px;
+  margin: auto;
+}
+
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.card img {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.card button {
+  margin-top: 6px;
+  padding: 6px 14px;
+  font-size: 14px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.msg-btn {
+  background: #128C7E;
+  color: #fff;
+}
+
+.img-btn {
+  background: #25D366;
+  color: #fff;
+}
+
+.note {
+  font-size: 12px;
+  color: #555;
+  margin-top: 4px;
+}
 </style>
 </head>
 
 <body>
 
-<!-- DROPDOWNS -->
+<!-- SELECTORS -->
 <div class="controls">
   <select id="typeSelect">
     <option value="">Cash Type</option>
@@ -62,13 +83,12 @@
 
   <select id="modelSelect">
     <option value="">Model</option>
-    <!-- You can add more models here -->
     <option value="Splendor">Splendor</option>
     <option value="Glamour">Glamour</option>
   </select>
 </div>
 
-<!-- IMAGE GALLERY -->
+<!-- IMAGE LIST -->
 <div id="gallery" class="gallery"></div>
 
 <script>
@@ -128,40 +148,47 @@ async function loadImages() {
     card.className = "card";
     card.innerHTML = `
       <img src="${imgUrl}">
-      <button onclick="shareImage('${imgUrl}')">WhatsApp</button>
+      <button class="msg-btn" onclick="sendMessage()">1️⃣ Send Message</button>
+      <button class="img-btn" onclick="shareImage('${imgUrl}')">2️⃣ Share Image</button>
+      <div class="note">
+        First send message, then share image and select same chat
+      </div>
     `;
     gallery.appendChild(card);
   });
 }
 
 /* ======================
-   FINAL VERIFIED SHARE LOGIC
+   STEP 1: SEND MESSAGE (AUTO NUMBER)
    ====================== */
-async function shareImage(imgUrl) {
-  // 1️⃣ Fetch image (works because GitHub Pages allows CORS)
-  const res = await fetch(imgUrl);
-  const blob = await res.blob();
-  const file = new File([blob], "quotation.jpg", { type: blob.type });
-
-  // 2️⃣ Attach image FIRST
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    await navigator.share({ files: [file] });
-  } else {
-    alert("Image sharing not supported on this device");
-    return;
-  }
-
-  // 3️⃣ Open WhatsApp with message + customer number
+function sendMessage() {
   const message =
-    `Hello 👋\n\nShared by:\n${dse}\n📞 ${dseMobile}`;
+`Customer No: ${customer}
+
+Hello 👋
+Shared by:
+${dse}
+📞 ${dseMobile}`;
 
   const waUrl =
     `https://wa.me/${customer}?text=${encodeURIComponent(message)}`;
 
-  // Small delay ensures WhatsApp keeps the attachment
-  setTimeout(() => {
-    window.location.href = waUrl;
-  }, 300);
+  window.location.href = waUrl;
+}
+
+/* ======================
+   STEP 2: SHARE IMAGE (NEW SHARE EACH TIME)
+   ====================== */
+async function shareImage(imgUrl) {
+  const res = await fetch(imgUrl);
+  const blob = await res.blob();
+  const file = new File([blob], "quotation.jpg", { type: blob.type });
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({ files: [file] });
+  } else {
+    alert("Image sharing not supported on this device");
+  }
 }
 </script>
 
