@@ -3,67 +3,140 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WhatsApp Share</title>
+<title>Quotation Share</title>
 
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f2f2f2;
-    padding: 16px;
-  }
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  padding: 12px;
+}
 
-  .container {
-    max-width: 360px;
-    margin: auto;
-    background: #fff;
-    padding: 12px;
-    border-radius: 10px;
-    text-align: center;
-  }
+.controls {
+  max-width: 420px;
+  margin: auto;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
 
-  img {
-    width: 100%;
-    border-radius: 8px;
-  }
+select {
+  flex: 1;
+  padding: 8px;
+  font-size: 14px;
+}
 
-  .wa-btn {
-    margin-top: 8px;
-    padding: 6px 14px;
-    font-size: 14px;
-    background: #25D366;
-    color: white;
-    border: none;
-    border-radius: 20px;
-  }
+.gallery {
+  max-width: 420px;
+  margin: auto;
+}
+
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.card img {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.card button {
+  margin-top: 6px;
+  padding: 6px 14px;
+  font-size: 14px;
+  background: #25D366;
+  color: white;
+  border: none;
+  border-radius: 20px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="container">
-  <img id="img" src="images/demo.jpg" alt="Image">
-  <button class="wa-btn" onclick="shareWhatsApp()">WhatsApp</button>
+<div class="controls">
+  <select id="typeSelect">
+    <option value="">Select Type</option>
+    <option value="cash">Cash</option>
+    <option value="finance">Finance</option>
+  </select>
+
+  <select id="modelSelect">
+    <option value="">Select Model</option>
+    <option value="Splendor">Splendor</option>
+    <option value="Glamour">Glamour</option>
+  </select>
 </div>
 
-<script>
-async function shareWhatsApp() {
-  const imgUrl = document.getElementById("img").src;
+<div id="gallery" class="gallery"></div>
 
-  // fetch works because image is hosted on GitHub Pages (same origin)
+<script>
+const OWNER = "chavanheromis-collab";
+const REPO = "whatsquotation";
+
+const typeSelect = document.getElementById("typeSelect");
+const modelSelect = document.getElementById("modelSelect");
+const gallery = document.getElementById("gallery");
+
+typeSelect.addEventListener("change", loadImages);
+modelSelect.addEventListener("change", loadImages);
+
+async function loadImages() {
+  gallery.innerHTML = "";
+
+  const type = typeSelect.value;
+  const model = modelSelect.value;
+
+  if (!type || !model) return;
+
+  const apiUrl =
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/images/${type}`;
+
+  const res = await fetch(apiUrl);
+  const files = await res.json();
+
+  const matched = files.filter(f =>
+    f.type === "file" && f.name.startsWith(model)
+  );
+
+  if (!matched.length) {
+    gallery.innerHTML = "<p>No images found.</p>";
+    return;
+  }
+
+  matched.forEach(file => {
+    const imgUrl = file.download_url;
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <img src="${imgUrl}">
+      <button onclick="shareImage('${imgUrl}')">WhatsApp</button>
+    `;
+
+    gallery.appendChild(card);
+  });
+}
+
+async function shareImage(imgUrl) {
   const res = await fetch(imgUrl);
   const blob = await res.blob();
-  const file = new File([blob], "image.jpg", { type: blob.type });
+  const file = new File([blob], "quotation.jpg", { type: blob.type });
 
-  const message = "Hello 👋\nShared via WhatsApp.";
+  const message = "Hello 👋\nPlease find the quotation attached.";
 
-  // WhatsApp will appear as a target in Android
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     await navigator.share({
       files: [file],
       text: message
     });
   } else {
-    alert("WhatsApp sharing not supported on this device");
+    alert("WhatsApp sharing not supported");
   }
 }
 </script>
