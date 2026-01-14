@@ -86,6 +86,7 @@ select {
    ========================= */
 const q = new URLSearchParams(window.location.search);
 const customer  = q.get("cust");    // Customer mobile
+const customername  = q.get("custname"); //customer name
 const dse       = q.get("dse");     // DSE name
 const dseMobile = q.get("dsemob");  // DSE mobile
 
@@ -186,12 +187,13 @@ async function loadImages() {
    ========================= */
 function sendMessage() {
   const message =
-`Customer No: ${customer}
-
-Hello 👋
-Shared by:
-${dse}
-📞 ${dseMobile}`;
+`🙏 Dear  ${customername},
+Welcome to Chavan Motors.
+Please find your quotation here.
+For any query contact:
+👤 ${dse} : 📞 ${dseMobile}.
+🤝 Thanks and Regards.
+`;
 
   const waUrl =
     `https://wa.me/${customer}?text=${encodeURIComponent(message)}`;
@@ -222,3 +224,4 @@ loadModelsFromSheet();
 
 </body>
 </html>
+
