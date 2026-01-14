@@ -1,96 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Quotation Share</title>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f2f2f2;
-  padding: 12px;
-}
-
-.controls {
-  max-width: 420px;
-  margin: auto;
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-select {
-  flex: 1;
-  padding: 8px;
-  font-size: 14px;
-}
-
-.gallery {
-  max-width: 420px;
-  margin: auto;
-}
-
-.card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 12px;
-  text-align: center;
-}
-
-.card img {
-  width: 100%;
-  border-radius: 8px;
-}
-
-.card button {
-  margin-top: 6px;
-  padding: 6px 14px;
-  font-size: 14px;
-  background: #25D366;
-  color: white;
-  border: none;
-  border-radius: 20px;
-}
+  body {
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+    padding: 12px;
+  }
+  .controls {
+    max-width: 420px;
+    margin: auto;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  select {
+    flex: 1;
+    padding: 8px;
+    font-size: 14px;
+  }
+  .gallery {
+    max-width: 420px;
+    margin: auto;
+  }
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .card img {
+    width: 100%;
+    border-radius: 8px;
+  }
+  .card button {
+    margin-top: 6px;
+    padding: 6px 14px;
+    font-size: 14px;
+    background: #25D366;
+    color: white;
+    border: none;
+    border-radius: 20px;
+  }
 </style>
 </head>
 
 <body>
 
+<!-- DROPDOWNS -->
 <div class="controls">
   <select id="typeSelect">
-    <option value="">Select Type</option>
+    <option value="">Cash Type</option>
     <option value="cash">Cash</option>
     <option value="finance">Finance</option>
   </select>
 
   <select id="modelSelect">
-    <option value="">Select Model</option>
+    <option value="">Model</option>
+    <!-- You can add more models here -->
     <option value="Splendor">Splendor</option>
     <option value="Glamour">Glamour</option>
   </select>
 </div>
 
+<!-- IMAGE GALLERY -->
 <div id="gallery" class="gallery"></div>
 
 <script>
-const OWNER = "chavanheromis-collab";
-const REPO = "whatsquotation";
+/* ======================
+   PARAMETERS FROM APPSHEET
+   ====================== */
+const q = new URLSearchParams(window.location.search);
+const customer = q.get("cust");     // customer mobile
+const dse = q.get("dse");           // dse name
+const dseMobile = q.get("dsemob");  // dse mobile
 
-const typeSelect = document.getElementById("typeSelect");
+/* ======================
+   GITHUB CONFIG
+   ====================== */
+const OWNER = "chavanheromis-collab";
+const REPO  = "whatsquotation";
+
+/* ======================
+   ELEMENTS
+   ====================== */
+const typeSelect  = document.getElementById("typeSelect");
 const modelSelect = document.getElementById("modelSelect");
-const gallery = document.getElementById("gallery");
+const gallery     = document.getElementById("gallery");
 
 typeSelect.addEventListener("change", loadImages);
 modelSelect.addEventListener("change", loadImages);
 
+/* ======================
+   LOAD IMAGES FROM GITHUB
+   ====================== */
 async function loadImages() {
   gallery.innerHTML = "";
 
-  const type = typeSelect.value;
+  const type  = typeSelect.value;
   const model = modelSelect.value;
-
   if (!type || !model) return;
 
   const apiUrl =
@@ -104,7 +117,7 @@ async function loadImages() {
   );
 
   if (!matched.length) {
-    gallery.innerHTML = "<p>No images found.</p>";
+    gallery.innerHTML = "<p>No quotations found.</p>";
     return;
   }
 
@@ -113,31 +126,42 @@ async function loadImages() {
 
     const card = document.createElement("div");
     card.className = "card";
-
     card.innerHTML = `
       <img src="${imgUrl}">
       <button onclick="shareImage('${imgUrl}')">WhatsApp</button>
     `;
-
     gallery.appendChild(card);
   });
 }
 
+/* ======================
+   FINAL VERIFIED SHARE LOGIC
+   ====================== */
 async function shareImage(imgUrl) {
+  // 1️⃣ Fetch image (works because GitHub Pages allows CORS)
   const res = await fetch(imgUrl);
   const blob = await res.blob();
   const file = new File([blob], "quotation.jpg", { type: blob.type });
 
-  const message = "Hello 👋\nPlease find the quotation attached.";
-
+  // 2️⃣ Attach image FIRST
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    await navigator.share({
-      files: [file],
-      text: message
-    });
+    await navigator.share({ files: [file] });
   } else {
-    alert("WhatsApp sharing not supported");
+    alert("Image sharing not supported on this device");
+    return;
   }
+
+  // 3️⃣ Open WhatsApp with message + customer number
+  const message =
+    `Hello 👋\n\nShared by:\n${dse}\n📞 ${dseMobile}`;
+
+  const waUrl =
+    `https://wa.me/${customer}?text=${encodeURIComponent(message)}`;
+
+  // Small delay ensures WhatsApp keeps the attachment
+  setTimeout(() => {
+    window.location.href = waUrl;
+  }, 300);
 }
 </script>
 
