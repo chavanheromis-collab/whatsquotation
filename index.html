@@ -1,64 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WhatsApp Image Share Demo</title>
+<title>WhatsApp Share</title>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f4f4;
-  padding: 16px;
-}
-.card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 12px;
-  max-width: 360px;
-  margin: auto;
-  text-align: center;
-}
-img {
-  width: 100%;
-  border-radius: 8px;
-}
-button {
-  margin-top: 12px;
-  width: 100%;
-  padding: 12px;
-  background: #25D366;
-  color: white;
-  border: none;
-  font-size: 16px;
-  border-radius: 6px;
-}
+  body {
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+    padding: 16px;
+  }
+
+  .container {
+    max-width: 360px;
+    margin: auto;
+    background: #fff;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  img {
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  .wa-btn {
+    margin-top: 8px;
+    padding: 6px 14px;
+    font-size: 14px;
+    background: #25D366;
+    color: white;
+    border: none;
+    border-radius: 20px;
+  }
 </style>
 </head>
 
 <body>
 
-<div class="card">
-  <img id="demoImg" src="images/demo.jpg">
-  <button onclick="share()">Share on WhatsApp</button>
+<div class="container">
+  <img id="img" src="images/demo.jpg" alt="Image">
+  <button class="wa-btn" onclick="shareWhatsApp()">WhatsApp</button>
 </div>
 
 <script>
-async function share() {
-  const imgUrl = document.getElementById("demoImg").src;
+async function shareWhatsApp() {
+  const imgUrl = document.getElementById("img").src;
 
+  // fetch works because image is hosted on GitHub Pages (same origin)
   const res = await fetch(imgUrl);
   const blob = await res.blob();
-  const file = new File([blob], "demo.jpg", { type: blob.type });
+  const file = new File([blob], "image.jpg", { type: blob.type });
 
-  const message = "Hello 👋\nThis is a WhatsApp image share demo.";
+  const message = "Hello 👋\nShared via WhatsApp.";
 
+  // WhatsApp will appear as a target in Android
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     await navigator.share({
       files: [file],
       text: message
     });
   } else {
-    alert("Web Share API not supported on this device");
+    alert("WhatsApp sharing not supported on this device");
   }
 }
 </script>
