@@ -11,7 +11,6 @@ body {
   background: #f2f2f2;
   padding: 12px;
 }
-
 .controls {
   max-width: 420px;
   margin: auto;
@@ -19,18 +18,15 @@ body {
   gap: 8px;
   margin-bottom: 12px;
 }
-
 select {
   flex: 1;
   padding: 8px;
   font-size: 14px;
 }
-
 .gallery {
   max-width: 420px;
   margin: auto;
 }
-
 .card {
   background: #fff;
   border-radius: 10px;
@@ -38,12 +34,10 @@ select {
   margin-bottom: 12px;
   text-align: center;
 }
-
 .card img {
   width: 100%;
   border-radius: 8px;
 }
-
 .card button {
   margin-top: 6px;
   padding: 6px 14px;
@@ -52,17 +46,14 @@ select {
   border-radius: 20px;
   cursor: pointer;
 }
-
 .msg-btn {
   background: #128C7E;
   color: #fff;
 }
-
 .img-btn {
   background: #25D366;
   color: #fff;
 }
-
 .note {
   font-size: 12px;
   color: #555;
@@ -82,33 +73,37 @@ select {
   </select>
 
   <select id="modelSelect">
-    <option value="">Model</option>
-    <option value="Splendor">Splendor</option>
-    <option value="Glamour">Glamour</option>
+    <option value="">Loading models...</option>
   </select>
 </div>
 
-<!-- IMAGE LIST -->
+<!-- IMAGE GALLERY -->
 <div id="gallery" class="gallery"></div>
 
 <script>
-/* ======================
-   PARAMETERS FROM APPSHEET
-   ====================== */
+/* =========================
+   APPSHEET PARAMETERS
+   ========================= */
 const q = new URLSearchParams(window.location.search);
-const customer = q.get("cust");     // customer mobile
-const dse = q.get("dse");           // dse name
-const dseMobile = q.get("dsemob");  // dse mobile
+const customer  = q.get("cust");    // Customer mobile
+const dse       = q.get("dse");     // DSE name
+const dseMobile = q.get("dsemob");  // DSE mobile
 
-/* ======================
+/* =========================
+   GOOGLE SHEET CONFIG
+   ========================= */
+const PRICE_SHEET_ID   = "13KWxOFThaRphbaLkglZ3zIwWIFIu_6VpnmQfHkrMoyI";
+const PRICE_SHEET_NAME = "List Price";
+
+/* =========================
    GITHUB CONFIG
-   ====================== */
+   ========================= */
 const OWNER = "chavanheromis-collab";
 const REPO  = "whatsquotation";
 
-/* ======================
+/* =========================
    ELEMENTS
-   ====================== */
+   ========================= */
 const typeSelect  = document.getElementById("typeSelect");
 const modelSelect = document.getElementById("modelSelect");
 const gallery     = document.getElementById("gallery");
@@ -116,9 +111,37 @@ const gallery     = document.getElementById("gallery");
 typeSelect.addEventListener("change", loadImages);
 modelSelect.addEventListener("change", loadImages);
 
-/* ======================
+/* =========================
+   LOAD MODELS FROM GOOGLE SHEET (COL A)
+   ========================= */
+async function loadModelsFromSheet() {
+  const url =
+    `https://docs.google.com/spreadsheets/d/${PRICE_SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(PRICE_SHEET_NAME)}`;
+
+  const res = await fetch(url);
+  const text = await res.text();
+
+  const json = JSON.parse(
+    text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1)
+  );
+
+  const rows = json.table.rows;
+
+  modelSelect.innerHTML = `<option value="">Select Model</option>`;
+
+  rows.forEach(r => {
+    if (!r.c || !r.c[0] || !r.c[0].v) return;
+    const model = r.c[0].v.toString().trim();
+    const opt = document.createElement("option");
+    opt.value = model;
+    opt.textContent = model;
+    modelSelect.appendChild(opt);
+  });
+}
+
+/* =========================
    LOAD IMAGES FROM GITHUB
-   ====================== */
+   ========================= */
 async function loadImages() {
   gallery.innerHTML = "";
 
@@ -137,7 +160,7 @@ async function loadImages() {
   );
 
   if (!matched.length) {
-    gallery.innerHTML = "<p>No quotations found.</p>";
+    gallery.innerHTML = "<p>No quotation images found.</p>";
     return;
   }
 
@@ -158,9 +181,9 @@ async function loadImages() {
   });
 }
 
-/* ======================
+/* =========================
    STEP 1: SEND MESSAGE (AUTO NUMBER)
-   ====================== */
+   ========================= */
 function sendMessage() {
   const message =
 `Customer No: ${customer}
@@ -176,9 +199,9 @@ ${dse}
   window.location.href = waUrl;
 }
 
-/* ======================
+/* =========================
    STEP 2: SHARE IMAGE (NEW SHARE EACH TIME)
-   ====================== */
+   ========================= */
 async function shareImage(imgUrl) {
   const res = await fetch(imgUrl);
   const blob = await res.blob();
@@ -190,6 +213,11 @@ async function shareImage(imgUrl) {
     alert("Image sharing not supported on this device");
   }
 }
+
+/* =========================
+   INIT
+   ========================= */
+loadModelsFromSheet();
 </script>
 
 </body>
