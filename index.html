@@ -2,16 +2,16 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Share Image</title>
+<title>WhatsApp Image Share Demo</title>
 
 <style>
 body {
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   background: #f4f4f4;
   padding: 16px;
 }
 .card {
-  background: white;
+  background: #fff;
   border-radius: 10px;
   padding: 12px;
   max-width: 360px;
@@ -38,32 +38,30 @@ button {
 <body>
 
 <div class="card">
-  <img id="img">
+  <img id="demoImg" src="images/demo.jpg">
   <button onclick="share()">Share on WhatsApp</button>
 </div>
 
 <script>
-const q = new URLSearchParams(window.location.search);
+async function share() {
+  const imgUrl = document.getElementById("demoImg").src;
 
-const phone = q.get("phone");
-const dse = q.get("dse");
-const dseMobile = q.get("dsemob");
-const imgUrl = q.get("img");
+  const res = await fetch(imgUrl);
+  const blob = await res.blob();
+  const file = new File([blob], "demo.jpg", { type: blob.type });
 
-document.getElementById("img").src = imgUrl;
+  const message = "Hello 👋\nThis is a WhatsApp image share demo.";
 
-function share() {
-  const message =
-    `Hello,\n\nShared by ${dse}\nContact: ${dseMobile}\n\n${imgUrl}`;
-
-  const waUrl =
-    `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-
-  window.location.href = waUrl;
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({
+      files: [file],
+      text: message
+    });
+  } else {
+    alert("Web Share API not supported on this device");
+  }
 }
 </script>
 
 </body>
 </html>
-
-
