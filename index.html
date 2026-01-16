@@ -11,78 +11,56 @@ body {
   background: #f2f2f2;
   padding: 12px;
 }
-.controls {
-  max-width: 420px;
-  margin: auto;
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-select {
-  flex: 1;
-  padding: 8px;
-  font-size: 14px;
-}
-.gallery {
-  max-width: 420px;
-  margin: auto;
-}
 .card {
+  max-width: 420px;
+  margin: auto;
   background: #fff;
   border-radius: 10px;
   padding: 10px;
-  margin-bottom: 12px;
   text-align: center;
 }
 .card img {
   width: 100%;
   border-radius: 8px;
 }
-.card button {
-  margin-top: 6px;
-  padding: 6px 14px;
-  font-size: 14px;
+button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
   border: none;
   border-radius: 20px;
+  font-size: 15px;
+  color: white;
   cursor: pointer;
 }
 .msg-btn {
   background: #128C7E;
-  color: #fff;
 }
 .img-btn {
   background: #25D366;
-  color: #fff;
 }
 .note {
   font-size: 12px;
   color: #555;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- SELECTORS -->
-<div class="controls">
-  <select id="typeSelect">
-    <option value="">Cash Type</option>
-    <option value="cash">Cash</option>
-    <option value="finance">Finance</option>
-  </select>
-
-  <select id="modelSelect">
-    <option value="">Loading models...</option>
-  </select>
+<div class="card">
+  <img id="quotationImg">
+  <button class="msg-btn" onclick="sendMessage()">1️⃣ Send WhatsApp Message</button>
+  <button class="img-btn" onclick="openImage()">2️⃣ Share Image</button>
+  <div class="note">
+    First send message, then share image and select the same chat
+  </div>
 </div>
-
-<!-- IMAGE AREA -->
-<div id="gallery" class="gallery"></div>
 
 <script>
 /* =========================
-   APPSHEET PARAMETERS
+   URL PARAMETERS (APPSHEET)
    ========================= */
 const q = new URLSearchParams(window.location.search);
 const customer     = q.get("cust");
@@ -91,91 +69,23 @@ const dse          = q.get("dse");
 const dseMobile    = q.get("dsemob");
 
 /* =========================
-   APPS SCRIPT CONFIG
+   APPS SCRIPT IMAGE URL
    ========================= */
-// 🔴 REPLACE WITH YOUR REAL SCRIPT URL
-const APPS_SCRIPT_BASE =
-  "https://script.google.com/macros/s/AKfycbzUwYmVsxo3QhwjnukJXKlNh1zcOrwdLLELHiKmd5815jc5bf8i2hGk7ZS3jlbEF2ruAg/exec";
+const IMAGE_URL =
+  "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?img=YOUR_FILE_ID";
 
-// 🔴 TEMP DEMO FILE ID (replace later with live-generated one)
-const DEMO_FILE_ID =
-  "1MPiWuW8WeaHDL0LEq0pLOxLRBxU6Q8GK";
-
-// Final image URL used for WhatsApp sharing
-const GENERATED_IMAGE_URL =
-  `${APPS_SCRIPT_BASE}?img=${DEMO_FILE_ID}`;
+/* SHOW IMAGE */
+document.getElementById("quotationImg").src = IMAGE_URL;
 
 /* =========================
-   GOOGLE SHEET CONFIG
-   ========================= */
-const PRICE_SHEET_ID   = "13KWxOFThaRphbaLkglZ3zIwWIFIu_6VpnmQfHkrMoyI";
-const PRICE_SHEET_NAME = "List Price";
-
-/* =========================
-   ELEMENTS
-   ========================= */
-const typeSelect  = document.getElementById("typeSelect");
-const modelSelect = document.getElementById("modelSelect");
-const gallery     = document.getElementById("gallery");
-
-typeSelect.addEventListener("change", renderCard);
-modelSelect.addEventListener("change", renderCard);
-
-/* =========================
-   LOAD MODELS FROM GOOGLE SHEET
-   ========================= */
-async function loadModelsFromSheet() {
-  const url =
-    `https://docs.google.com/spreadsheets/d/${PRICE_SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(PRICE_SHEET_NAME)}`;
-
-  const res = await fetch(url);
-  const text = await res.text();
-  const json = JSON.parse(
-    text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1)
-  );
-
-  modelSelect.innerHTML = `<option value="">Select Model</option>`;
-
-  json.table.rows.forEach(r => {
-    if (!r.c || !r.c[0] || !r.c[0].v) return;
-    const model = r.c[0].v.toString().trim();
-    const opt = document.createElement("option");
-    opt.value = model;
-    opt.textContent = model;
-    modelSelect.appendChild(opt);
-  });
-}
-
-/* =========================
-   SHOW CARD (NO IMAGE FETCH)
-   ========================= */
-function renderCard() {
-  gallery.innerHTML = "";
-
-  if (!typeSelect.value || !modelSelect.value) return;
-
-  const card = document.createElement("div");
-  card.className = "card";
-  card.innerHTML = `
-    <img src="${GENERATED_IMAGE_URL}">
-    <button class="msg-btn" onclick="sendMessage()">1️⃣ Send Message</button>
-    <button class="img-btn" onclick="openImageForWhatsApp()">2️⃣ Share Image</button>
-    <div class="note">
-      First send message, then open image → share to WhatsApp
-    </div>
-  `;
-  gallery.appendChild(card);
-}
-
-/* =========================
-   STEP 1: SEND WHATSAPP MESSAGE
+   STEP 1 — SEND MESSAGE
    ========================= */
 function sendMessage() {
   const message =
 `🙏 Dear ${customername},
 Welcome to Chavan Motors.
 
-Please find your quotation here.
+Please find your quotation.
 
 For any query contact:
 👤 ${dse}
@@ -190,16 +100,11 @@ For any query contact:
 }
 
 /* =========================
-   STEP 2: OPEN IMAGE FOR SHARE
+   STEP 2 — SHARE IMAGE
    ========================= */
-function openImageForWhatsApp() {
-  window.open(GENERATED_IMAGE_URL, "_blank");
+function openImage() {
+  window.open(IMAGE_URL, "_blank");
 }
-
-/* =========================
-   INIT
-   ========================= */
-loadModelsFromSheet();
 </script>
 
 </body>
