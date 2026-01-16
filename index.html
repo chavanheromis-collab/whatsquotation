@@ -52,7 +52,8 @@ button {
 <div class="card">
   <img id="quotationImg">
   <button class="msg-btn" onclick="sendMessage()">1️⃣ Send WhatsApp Message</button>
-  <button class="img-btn" onclick="openImage()">2️⃣ Share Image</button>
+  <button class="img-btn" onclick="shareImage()">2️⃣ Share Image</button>
+
   <div class="note">
     First send message, then share image and select the same chat
   </div>
@@ -105,8 +106,29 @@ For any query contact:
 function openImage() {
   window.open(IMAGE_URL, "_blank");
 }
+
+async function shareImage() {
+  try {
+    // This is your Apps Script image viewer URL
+    const imageUrl =
+      "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?img=YOUR_FILE_ID";
+
+    if (navigator.share) {
+      await navigator.share({
+        title: "Quotation",
+        text: "Please find the quotation image",
+        url: imageUrl
+      });
+    } else {
+      alert("Share not supported on this device");
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
 </script>
 
 </body>
 </html>
+
 
