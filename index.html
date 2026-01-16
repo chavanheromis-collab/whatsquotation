@@ -77,7 +77,7 @@ select {
   </select>
 </div>
 
-<!-- IMAGE GALLERY -->
+<!-- IMAGE AREA -->
 <div id="gallery" class="gallery"></div>
 
 <script>
@@ -85,10 +85,25 @@ select {
    APPSHEET PARAMETERS
    ========================= */
 const q = new URLSearchParams(window.location.search);
-const customer  = q.get("cust");    // Customer mobile
-const customername  = q.get("custname"); //customer name
-const dse       = q.get("dse");     // DSE name
-const dseMobile = q.get("dsemob");  // DSE mobile
+const customer     = q.get("cust");
+const customername = q.get("custname");
+const dse          = q.get("dse");
+const dseMobile    = q.get("dsemob");
+
+/* =========================
+   APPS SCRIPT CONFIG
+   ========================= */
+// 🔴 REPLACE WITH YOUR REAL SCRIPT URL
+const APPS_SCRIPT_BASE =
+  "https://script.google.com/macros/s/AKfycbzUwYmVsxo3QhwjnukJXKlNh1zcOrwdLLELHiKmd5815jc5bf8i2hGk7ZS3jlbEF2ruAg/exec";
+
+// 🔴 TEMP DEMO FILE ID (replace later with live-generated one)
+const DEMO_FILE_ID =
+  "1MPiWuW8WeaHDL0LEq0pLOxLRBxU6Q8GK";
+
+// Final image URL used for WhatsApp sharing
+const GENERATED_IMAGE_URL =
+  `${APPS_SCRIPT_BASE}?img=${DEMO_FILE_ID}`;
 
 /* =========================
    GOOGLE SHEET CONFIG
@@ -97,23 +112,17 @@ const PRICE_SHEET_ID   = "13KWxOFThaRphbaLkglZ3zIwWIFIu_6VpnmQfHkrMoyI";
 const PRICE_SHEET_NAME = "List Price";
 
 /* =========================
-   GITHUB CONFIG
-   ========================= */
-const OWNER = "chavanheromis-collab";
-const REPO  = "whatsquotation";
-
-/* =========================
    ELEMENTS
    ========================= */
 const typeSelect  = document.getElementById("typeSelect");
 const modelSelect = document.getElementById("modelSelect");
 const gallery     = document.getElementById("gallery");
 
-typeSelect.addEventListener("change", loadImages);
-modelSelect.addEventListener("change", loadImages);
+typeSelect.addEventListener("change", renderCard);
+modelSelect.addEventListener("change", renderCard);
 
 /* =========================
-   LOAD MODELS FROM GOOGLE SHEET (COL A)
+   LOAD MODELS FROM GOOGLE SHEET
    ========================= */
 async function loadModelsFromSheet() {
   const url =
@@ -121,16 +130,13 @@ async function loadModelsFromSheet() {
 
   const res = await fetch(url);
   const text = await res.text();
-
   const json = JSON.parse(
     text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1)
   );
 
-  const rows = json.table.rows;
-
   modelSelect.innerHTML = `<option value="">Select Model</option>`;
 
-  rows.forEach(r => {
+  json.table.rows.forEach(r => {
     if (!r.c || !r.c[0] || !r.c[0].v) return;
     const model = r.c[0].v.toString().trim();
     const opt = document.createElement("option");
@@ -141,59 +147,41 @@ async function loadModelsFromSheet() {
 }
 
 /* =========================
-   LOAD IMAGES FROM GITHUB
+   SHOW CARD (NO IMAGE FETCH)
    ========================= */
-async function loadImages() {
+function renderCard() {
   gallery.innerHTML = "";
 
-  const type  = typeSelect.value;
-  const model = modelSelect.value;
-  if (!type || !model) return;
+  if (!typeSelect.value || !modelSelect.value) return;
 
-  const apiUrl =
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/images/${type}`;
-
-  const res = await fetch(apiUrl);
-  const files = await res.json();
-
-  const matched = files.filter(f =>
-    f.type === "file" && f.name.startsWith(model)
-  );
-
-  if (!matched.length) {
-    gallery.innerHTML = "<p>No quotation images found.</p>";
-    return;
-  }
-
-  matched.forEach(file => {
-    const imgUrl = file.download_url;
-
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <img src="${imgUrl}">
-      <button class="msg-btn" onclick="sendMessage()">1️⃣ Send Message</button>
-      <button class="img-btn" onclick="shareImage('${imgUrl}')">2️⃣ Share Image</button>
-      <div class="note">
-        First send message, then share image and select same chat
-      </div>
-    `;
-    gallery.appendChild(card);
-  });
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <img src="${GENERATED_IMAGE_URL}">
+    <button class="msg-btn" onclick="sendMessage()">1️⃣ Send Message</button>
+    <button class="img-btn" onclick="openImageForWhatsApp()">2️⃣ Share Image</button>
+    <div class="note">
+      First send message, then open image → share to WhatsApp
+    </div>
+  `;
+  gallery.appendChild(card);
 }
 
 /* =========================
-   STEP 1: SEND MESSAGE (AUTO NUMBER)
+   STEP 1: SEND WHATSAPP MESSAGE
    ========================= */
 function sendMessage() {
   const message =
-`🙏 Dear  ${customername},
+`🙏 Dear ${customername},
 Welcome to Chavan Motors.
+
 Please find your quotation here.
+
 For any query contact:
-👤 ${dse} : 📞 ${dseMobile}.
-🤝 Thanks and Regards.
-`;
+👤 ${dse}
+📞 ${dseMobile}
+
+🤝 Thanks & Regards`;
 
   const waUrl =
     `https://wa.me/${customer}?text=${encodeURIComponent(message)}`;
@@ -202,18 +190,10 @@ For any query contact:
 }
 
 /* =========================
-   STEP 2: SHARE IMAGE (NEW SHARE EACH TIME)
+   STEP 2: OPEN IMAGE FOR SHARE
    ========================= */
-async function shareImage(imgUrl) {
-  const res = await fetch(imgUrl);
-  const blob = await res.blob();
-  const file = new File([blob], "quotation.jpg", { type: blob.type });
-
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    await navigator.share({ files: [file] });
-  } else {
-    alert("Image sharing not supported on this device");
-  }
+function openImageForWhatsApp() {
+  window.open(GENERATED_IMAGE_URL, "_blank");
 }
 
 /* =========================
@@ -224,4 +204,3 @@ loadModelsFromSheet();
 
 </body>
 </html>
-
