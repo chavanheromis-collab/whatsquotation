@@ -89,8 +89,24 @@ Thanks & Regards`;
 
 // STEP 2: Share image (WhatsApp share sheet)
 async function shareImage() {
-  const res = await fetch(imgUrl);
-  const blob = await res.blob();
+
+  // Convert preview URL → raw URL
+  const rawUrl = imgUrl.replace("?img=", "?raw=");
+
+  const res = await fetch(rawUrl);
+  const base64 = await res.text();
+
+  const byteChars = atob(base64);
+  const byteNumbers = new Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) {
+    byteNumbers[i] = byteChars.charCodeAt(i);
+  }
+
+  const blob = new Blob(
+    [new Uint8Array(byteNumbers)],
+    { type: "image/png" }
+  );
+
   const file = new File([blob], "quotation.png", { type: blob.type });
 
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -99,7 +115,9 @@ async function shareImage() {
     alert("Image sharing not supported on this device");
   }
 }
+
 </script>
 
 </body>
 </html>
+
