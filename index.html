@@ -1,96 +1,279 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Quotation Preview</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chavan Motors - Quotation</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      padding: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+    
+    .container {
+      max-width: 450px;
+      width: 100%;
+    }
+    
     .card {
-      max-width: 420px;
-      margin: auto;
-      background: #fff;
-      border-radius: 12px;
-      padding: 10px;
-      text-align: center;
-    }
-    img {
-      width: 100%;
-      max-height: 300px;
-      object-fit: contain;
-      border-radius: 8px;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border: none;
+      background: white;
       border-radius: 20px;
-      font-size: 15px;
-      color: white;
-      background: #128C7E;
-      cursor: pointer;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      animation: slideUp 0.5s ease-out;
     }
-    .note {
-      font-size: 12px;
-      color: #555;
-      margin-top: 8px;
-      line-height: 1.4;
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    
+    .header p {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .image-container {
+      position: relative;
+      margin: 20px 0;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f5f5f5;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #quoteImg {
+      width: 100%;
+      height: auto;
+      display: block;
+      max-height: 500px;
+      object-fit: contain;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+    
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .btn-whatsapp {
+      background: #25D366;
+      color: white;
+      margin-bottom: 12px;
+    }
+    
+    .btn-whatsapp:active {
+      background: #128C7E;
+      transform: scale(0.98);
+    }
+    
+    .instructions {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    
+    .instructions h3 {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .instructions ol {
+      padding-left: 20px;
+      color: #666;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+    
+    .error {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    
+    .error-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    
+    .error h2 {
+      color: #e74c3c;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    
+    .error p {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
     }
   </style>
 </head>
-
 <body>
-
-<div class="card">
-  <img id="quoteImg">
-
-  <button onclick="sendMessage()">📩 Send WhatsApp Message</button>
-
-  <div class="note">
-    After sending message,<br>
-    <b>long-press the image</b> to share on WhatsApp
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <h1>🚗 Chavan Motors</h1>
+        <p>Your Quotation is Ready</p>
+      </div>
+      
+      <div id="content">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Loading your quotation...</p>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
 
-<script>
-const q = new URLSearchParams(window.location.search);
+  <script>
+    // Get URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const fileId = params.get("fileId");
+    const customer = params.get("cust");
+    const name = params.get("custname");
+    const dse = params.get("dse");
+    const dsemob = params.get("dsemob");
 
-const fileId   = q.get("fileId");
-const customer = q.get("cust");
-const name     = q.get("custname");
-const dse      = q.get("dse");
-const dsemob   = q.get("dsemob");
+    // Validate required parameters
+    if (!fileId || !customer || !name) {
+      showError("Missing required information", "Please use the link from AppSheet");
+    } else {
+      loadImage();
+    }
 
-// 🔒 Build image URL internally (NO nesting issues)
-const IMAGE_SERVER =
-  "https://script.google.com/macros/s/AKfycbyr70myZuDAfCsVCdPlNcgskFTydg236p6kdNrbnB_1JaFvIRL2ckXbB_zruGk7orrg4w/exec";
+    function loadImage() {
+      // Use Google Drive's thumbnail API (works for public files)
+      const imgUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+      
+      document.getElementById('content').innerHTML = `
+        <div class="image-container">
+          <img id="quoteImg" src="${imgUrl}" alt="Quotation Image">
+        </div>
+        
+        <button class="btn btn-whatsapp" onclick="sendWhatsApp()">
+          <span style="font-size: 20px;">💬</span>
+          Send WhatsApp Message
+        </button>
+        
+        <div class="instructions">
+          <h3>📤 How to share the image:</h3>
+          <ol>
+            <li>Click the button above to open WhatsApp</li>
+            <li><strong>Long-press</strong> the quotation image</li>
+            <li>Select <strong>"Share"</strong> from the menu</li>
+            <li>Choose <strong>WhatsApp</strong> and send to customer</li>
+          </ol>
+        </div>
+      `;
+      
+      // Handle image load error
+      const img = document.getElementById('quoteImg');
+      
+      img.onload = function() {
+        console.log('✅ Image loaded successfully');
+      };
+      
+      img.onerror = function() {
+        showError(
+          "Image not found",
+          "The quotation image could not be loaded. Please wait a few seconds and refresh this page."
+        );
+      };
+    }
 
-const imgUrl = IMAGE_SERVER + "?img=" + fileId;
-document.getElementById("quoteImg").src = imgUrl;
+    function sendWhatsApp() {
+      const message = `🙏 Dear ${name},
 
-// WhatsApp message
-function sendMessage() {
-  const msg =
-`🙏 Dear ${name},
 Welcome to Chavan Motors.
 
-Please find your quotation.
-For any query contact:
-👤 ${dse}
-📞 ${dsemob}
+Please find your quotation attached.
 
-Thanks & Regards`;
+For any queries, feel free to contact:
+👤 ${dse || 'Sales Executive'}
+📞 ${dsemob || 'Contact Number'}
 
-  window.location.href =
-    `https://wa.me/${customer}?text=${encodeURIComponent(msg)}`;
-}
-</script>
+Thanks & Regards
+Chavan Motors Team`;
 
+      const whatsappUrl = `https://wa.me/${customer}?text=${encodeURIComponent(message)}`;
+      window.location.href = whatsappUrl;
+    }
+
+    function showError(title, message) {
+      document.getElementById('content').innerHTML = `
+        <div class="error">
+          <div class="error-icon">⚠️</div>
+          <h2>${title}</h2>
+          <p>${message}</p>
+        </div>
+      `;
+    }
+  </script>
 </body>
 </html>
