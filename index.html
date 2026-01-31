@@ -115,22 +115,12 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
-      margin-bottom: 12px;
-    }
-    
-    .btn-share {
-      background: #ff6b6b;
-      color: white;
-    }
-    
-    .btn-share:active {
-      background: #ee5a52;
-      transform: scale(0.98);
     }
     
     .btn-whatsapp {
       background: #25D366;
       color: white;
+      margin-bottom: 12px;
     }
     
     .btn-whatsapp:active {
@@ -182,10 +172,6 @@
       font-size: 14px;
       line-height: 1.6;
     }
-
-    canvas {
-      display: none;
-    }
   </style>
 </head>
 <body>
@@ -204,8 +190,6 @@
       </div>
     </div>
   </div>
-
-  <canvas id="shareCanvas"></canvas>
 
   <script>
     // Get URL parameters
@@ -229,24 +213,21 @@
       
       document.getElementById('content').innerHTML = `
         <div class="image-container">
-          <img id="quoteImg" src="${imgUrl}" alt="Quotation Image" crossorigin="anonymous">
+          <img id="quoteImg" src="${imgUrl}" alt="Quotation Image">
         </div>
         
-        <button class="btn btn-share" onclick="shareImage()">
-          <span style="font-size: 20px;">📤</span>
-          Share Image to WhatsApp
-        </button>
-
         <button class="btn btn-whatsapp" onclick="sendWhatsApp()">
           <span style="font-size: 20px;">💬</span>
-          Send Text Message
+          Send WhatsApp Message
         </button>
         
         <div class="instructions">
-          <h3>📤 Two ways to share:</h3>
+          <h3>📤 How to share the image:</h3>
           <ol>
-            <li><strong>Option 1:</strong> Click "Share Image to WhatsApp" → Select contact → Image sent directly (no link)</li>
-            <li><strong>Option 2:</strong> Click "Send Text Message" → Opens WhatsApp with pre-filled message</li>
+            <li>Click the button above to open WhatsApp</li>
+            <li><strong>Long-press</strong> the quotation image</li>
+            <li>Select <strong>"Share"</strong> from the menu</li>
+            <li>Choose <strong>WhatsApp</strong> and send to customer</li>
           </ol>
         </div>
       `;
@@ -264,64 +245,6 @@
           "The quotation image could not be loaded. Please wait a few seconds and refresh this page."
         );
       };
-    }
-
-    async function shareImage() {
-      try {
-        const img = document.getElementById('quoteImg');
-        const canvas = document.getElementById('shareCanvas');
-        const ctx = canvas.getContext('2d');
-
-        // Set canvas size to image size
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-
-        // Draw image on canvas
-        ctx.drawImage(img, 0, 0);
-
-        // Convert canvas to blob
-        canvas.toBlob(async function(blob) {
-          const file = new File([blob], `Chavan_Motors_Quote.png`, { type: 'image/png' });
-
-          // Check if Web Share API is supported
-          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
-              await navigator.share({
-                files: [file],
-                title: 'Chavan Motors Quotation',
-                text: `Dear ${name}, here is your quotation from Chavan Motors.`
-              });
-              console.log('✅ Shared successfully');
-            } catch (error) {
-              if (error.name !== 'AbortError') {
-                console.error('Share failed:', error);
-                fallbackDownload(blob);
-              }
-            }
-          } else {
-            // Fallback: Download the image
-            fallbackDownload(blob);
-          }
-        }, 'image/png');
-
-      } catch (error) {
-        console.error('Error sharing:', error);
-        alert('❌ Could not share image. Please try the text message button instead.');
-      }
-    }
-
-    function fallbackDownload(blob) {
-      // Download image as fallback
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Chavan_Motors_Quote.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      alert('✅ Image downloaded! Now open WhatsApp and attach it from your gallery.');
     }
 
     function sendWhatsApp() {
