@@ -2,14 +2,14 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Quotation</title>
+  <title>Quotation Preview</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f2f2f2;
-      padding: 10px;
+      padding: 12px;
     }
     .card {
       max-width: 420px;
@@ -21,28 +21,26 @@
     }
     img {
       width: 100%;
+      max-height: 300px;      /* 👈 SMALL PREVIEW */
+      object-fit: contain;
       border-radius: 8px;
     }
     button {
       width: 100%;
       padding: 12px;
-      margin-top: 8px;
+      margin-top: 10px;
       border: none;
       border-radius: 20px;
       font-size: 15px;
       color: white;
-      cursor: pointer;
-    }
-    .msg {
       background: #128C7E;
-    }
-    .img {
-      background: #25D366;
+      cursor: pointer;
     }
     .note {
       font-size: 12px;
       color: #555;
-      margin-top: 6px;
+      margin-top: 8px;
+      line-height: 1.4;
     }
   </style>
 </head>
@@ -50,30 +48,35 @@
 <body>
 
 <div class="card">
+  <!-- IMAGE PREVIEW -->
   <img id="quoteImg">
-  <button class="msg" onclick="sendMessage()">1️⃣ Send WhatsApp Message</button>
-  <button class="img" onclick="shareImage()">2️⃣ Share Image</button>
+
+  <!-- WHATSAPP MESSAGE BUTTON -->
+  <button onclick="sendMessage()">📩 Send WhatsApp Message</button>
+
+  <!-- USER INSTRUCTION -->
   <div class="note">
-    First send message, then share image and select WhatsApp contact
+    After sending message,<br>
+    <b>long-press on the image</b> to share it on WhatsApp.
   </div>
 </div>
 
 <script>
 const q = new URLSearchParams(window.location.search);
 
-const imgUrl     = q.get("img");
-const customer   = q.get("cust");
-const custname   = q.get("custname");
-const dse        = q.get("dse");
-const dsemob     = q.get("dsemob");
+const imgUrl   = q.get("img");
+const customer = q.get("cust");
+const name     = q.get("custname");
+const dse      = q.get("dse");
+const dsemob   = q.get("dsemob");
 
-// Show image
+// Show image preview
 document.getElementById("quoteImg").src = imgUrl;
 
-// STEP 1: Send message (auto number)
+// WhatsApp message
 function sendMessage() {
   const msg =
-`🙏 Dear ${custname},
+`🙏 Dear ${name},
 Welcome to Chavan Motors.
 
 Please find your quotation.
@@ -86,38 +89,7 @@ Thanks & Regards`;
   window.location.href =
     `https://wa.me/${customer}?text=${encodeURIComponent(msg)}`;
 }
-
-// STEP 2: Share image (WhatsApp share sheet)
-async function shareImage() {
-
-  // Convert preview URL → raw URL
-  const rawUrl = imgUrl.replace("?img=", "?raw=");
-
-  const res = await fetch(rawUrl);
-  const base64 = await res.text();
-
-  const byteChars = atob(base64);
-  const byteNumbers = new Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) {
-    byteNumbers[i] = byteChars.charCodeAt(i);
-  }
-
-  const blob = new Blob(
-    [new Uint8Array(byteNumbers)],
-    { type: "image/png" }
-  );
-
-  const file = new File([blob], "quotation.png", { type: blob.type });
-
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    await navigator.share({ files: [file] });
-  } else {
-    alert("Image sharing not supported on this device");
-  }
-}
-
 </script>
 
 </body>
 </html>
-
