@@ -32,6 +32,7 @@
       padding: 24px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
       animation: slideUp 0.5s ease-out;
+      margin-bottom: 20px;
     }
     
     @keyframes slideUp {
@@ -60,6 +61,17 @@
       color: #666;
       font-size: 14px;
     }
+
+    .model-label {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      text-align: center;
+    }
     
     .image-container {
       position: relative;
@@ -71,9 +83,30 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
+    }
+
+    .image-container::after {
+      content: "👆 Tap to open image";
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      opacity: 0;
+      animation: fadeInOut 3s ease-in-out infinite;
+    }
+
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
     }
     
-    #quoteImg {
+    .quote-img {
       width: 100%;
       height: auto;
       display: block;
@@ -150,6 +183,10 @@
       font-size: 13px;
       line-height: 1.8;
     }
+
+    .instructions strong {
+      color: #25D366;
+    }
     
     .error {
       text-align: center;
@@ -172,6 +209,16 @@
       font-size: 14px;
       line-height: 1.6;
     }
+
+    .whatsapp-section {
+      position: sticky;
+      bottom: 0;
+      background: white;
+      padding: 16px 24px;
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+      margin: 0 -20px -20px -20px;
+    }
   </style>
 </head>
 <body>
@@ -185,7 +232,7 @@
       <div id="content">
         <div class="loading">
           <div class="spinner"></div>
-          <p>Loading your quotation...</p>
+          <p>Loading your quotations...</p>
         </div>
       </div>
     </div>
@@ -194,65 +241,104 @@
   <script>
     // Get URL parameters
     const params = new URLSearchParams(window.location.search);
-    const fileId = params.get("fileId");
+    const fileId1 = params.get("fileId1");
+    const fileId2 = params.get("fileId2");
+    const fileId3 = params.get("fileId3");
     const customer = params.get("cust");
     const name = params.get("custname");
     const dse = params.get("dse");
     const dsemob = params.get("dsemob");
 
+    console.log("Parameters:", { fileId1, fileId2, fileId3, customer, name });
+
     // Validate required parameters
-    if (!fileId || !customer || !name) {
+    if (!customer || !name) {
       showError("Missing required information", "Please use the link from AppSheet");
+    } else if (!fileId1 && !fileId2 && !fileId3) {
+      showError("No quotations found", "No models have been selected");
     } else {
-      loadImage();
+      loadImages();
     }
 
-    function loadImage() {
-      // Use Google Drive's thumbnail API (works for public files)
-      const imgUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
-      
-      document.getElementById('content').innerHTML = `
-        <div class="image-container">
-          <img id="quoteImg" src="${imgUrl}" alt="Quotation Image">
-        </div>
-        
-        <button class="btn btn-whatsapp" onclick="sendWhatsApp()">
-          <span style="font-size: 20px;">💬</span>
-          Send WhatsApp Message
-        </button>
-        
-        <div class="instructions">
-          <h3>📤 How to share the image:</h3>
-          <ol>
-            <li>Click the button above to open WhatsApp</li>
-            <li><strong>Long-press</strong> the quotation image</li>
-            <li>Select <strong>"Share"</strong> from the menu</li>
-            <li>Choose <strong>WhatsApp</strong> and send to customer</li>
-          </ol>
+    function loadImages() {
+      const models = [
+        { id: fileId1, label: "Model 1" },
+        { id: fileId2, label: "Model 2" },
+        { id: fileId3, label: "Model 3" }
+      ];
+
+      let contentHtml = '';
+      let modelCount = 0;
+
+      // Generate HTML for each available model
+      models.forEach((model, index) => {
+        if (model.id) {
+          modelCount++;
+          const imgUrl = `https://drive.google.com/thumbnail?id=${model.id}&sz=w1000`;
+          const directImageUrl = `https://drive.google.com/uc?export=view&id=${model.id}`;
+          
+          contentHtml += `
+            <div class="card">
+              <div class="model-label">${model.label}</div>
+              <div class="image-container" onclick="window.open('${directImageUrl}', '_blank')">
+                <img class="quote-img" src="${imgUrl}" alt="${model.label} Quotation">
+              </div>
+            </div>
+          `;
+        }
+      });
+
+      // Add WhatsApp button and instructions
+      contentHtml += `
+        <div class="card">
+          <button class="btn btn-whatsapp" onclick="sendWhatsApp()">
+            <span style="font-size: 20px;">💬</span>
+            Send WhatsApp Message
+          </button>
+          
+          <div class="instructions">
+            <h3>📤 How to share ${modelCount > 1 ? 'images' : 'the image'} (NO URL attached):</h3>
+            <ol>
+              <li><strong>Tap any image above</strong> - it will open in full screen</li>
+              <li><strong>Long-press</strong> the full-screen image</li>
+              <li>Select <strong>"Share"</strong> from the menu</li>
+              <li>Choose <strong>WhatsApp</strong> → Select customer → Send</li>
+              <li>✅ <strong>Only the image will be shared - no webpage link!</strong></li>
+              ${modelCount > 1 ? '<li>Repeat for other models if needed</li>' : ''}
+            </ol>
+          </div>
         </div>
       `;
-      
-      // Handle image load error
-      const img = document.getElementById('quoteImg');
-      
-      img.onload = function() {
-        console.log('✅ Image loaded successfully');
-      };
-      
-      img.onerror = function() {
-        showError(
-          "Image not found",
-          "The quotation image could not be loaded. Please wait a few seconds and refresh this page."
-        );
-      };
+
+      document.getElementById('content').innerHTML = contentHtml;
+
+      // Check if images loaded successfully
+      document.querySelectorAll('.quote-img').forEach((img, index) => {
+        img.onload = function() {
+          console.log(`✅ Model ${index + 1} loaded successfully`);
+        };
+        
+        img.onerror = function() {
+          this.parentElement.innerHTML = `
+            <div class="error">
+              <div class="error-icon">⚠️</div>
+              <h2>Image not found</h2>
+              <p>Model ${index + 1} could not be loaded</p>
+            </div>
+          `;
+        };
+      });
     }
 
     function sendWhatsApp() {
+      const modelCount = [fileId1, fileId2, fileId3].filter(id => id).length;
+      const modelsText = modelCount > 1 ? `${modelCount} quotations` : 'quotation';
+
       const message = `🙏 Dear ${name},
 
 Welcome to Chavan Motors.
 
-Please find your quotation attached.
+Please find your ${modelsText} attached.
 
 For any queries, feel free to contact:
 👤 ${dse || 'Sales Executive'}
