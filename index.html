@@ -21,7 +21,7 @@
     }
     img {
       width: 100%;
-      max-height: 300px;      /* 👈 SMALL PREVIEW */
+      max-height: 300px;
       object-fit: contain;
       border-radius: 8px;
     }
@@ -48,29 +48,30 @@
 <body>
 
 <div class="card">
-  <!-- IMAGE PREVIEW -->
   <img id="quoteImg">
 
-  <!-- WHATSAPP MESSAGE BUTTON -->
   <button onclick="sendMessage()">📩 Send WhatsApp Message</button>
 
-  <!-- USER INSTRUCTION -->
   <div class="note">
     After sending message,<br>
-    <b>long-press on the image</b> to share it on WhatsApp.
+    <b>long-press the image</b> to share on WhatsApp
   </div>
 </div>
 
 <script>
 const q = new URLSearchParams(window.location.search);
 
-const imgUrl   = q.get("img");
+const fileId   = q.get("fileId");
 const customer = q.get("cust");
 const name     = q.get("custname");
 const dse      = q.get("dse");
 const dsemob   = q.get("dsemob");
 
-// Show image preview
+// 🔒 Build image URL internally (NO nesting issues)
+const IMAGE_SERVER =
+  "https://script.google.com/macros/s/AKfycbyr70myZuDAfCsVCdPlNcgskFTydg236p6kdNrbnB_1JaFvIRL2ckXbB_zruGk7orrg4w/exec";
+
+const imgUrl = IMAGE_SERVER + "?img=" + fileId;
 document.getElementById("quoteImg").src = imgUrl;
 
 // WhatsApp message
