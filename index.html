@@ -334,18 +334,20 @@
       const modelCount = [fileId1, fileId2, fileId3].filter(id => id).length;
       const modelsText = modelCount > 1 ? `${modelCount} quotations` : 'quotation';
 
-      const message = `🙏 Dear ${name},
+      const message = `🙏 Hello ${name},
 
-Welcome to Chavan Motors.
+Welcome to *Chavan Automobiles* 🚘
 
-Please find your ${modelsText} attached.
+Your quotation is attached below 📄.
+Please have a look and let us know if you need any changes or details.
 
-For any queries, feel free to contact:
+For quick support, contact:
 👤 ${dse || 'Sales Executive'}
 📞 ${dsemob || 'Contact Number'}
 
-Thanks & Regards
-Chavan Motors Team`;
+Thank you for choosing us!
+*Chavan Automobiles Team*`;
+
 
       const whatsappUrl = `https://wa.me/${customer}?text=${encodeURIComponent(message)}`;
       window.location.href = whatsappUrl;
@@ -363,3 +365,4 @@ Chavan Motors Team`;
   </script>
 </body>
 </html>
+
