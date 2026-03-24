@@ -22,13 +22,13 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
+  cursor:pointer;
 }
 .quote-img{
   width:100%;
   max-height:500px;
   object-fit:contain;
 }
-.error{text-align:center;padding:20px;}
 .btn{
   width:100%;
   padding:15px;
@@ -37,6 +37,7 @@ body{
   border:none;
   border-radius:10px;
 }
+.error{text-align:center;padding:20px;}
 </style>
 </head>
 
@@ -60,30 +61,28 @@ const name = params.get("custname");
 const dse = params.get("dse");
 const dsemob = params.get("dsemob");
 
-console.log("🔎 PARAMS:", {customer,name,dse,dsemob});
-
-// ===== CONVERT FILE ID TO URL =====
-function formatDriveUrl(id) {
-  if (!id) return "";
+// ===== DRIVE HANDLER (v1 LOGIC) =====
+function formatDriveUrls(id) {
+  if (!id) return null;
 
   id = id.trim();
 
-  if (id.startsWith("http")) return id;
+  if (id.startsWith("http")) {
+    return { img: id, full: id };
+  }
 
-  return "https://drive.google.com/uc?export=view&id=" + id;
+  return {
+    img: `https://drive.google.com/thumbnail?id=${id}&sz=w1000`,
+    full: `https://drive.google.com/uc?export=view&id=${id}`
+  };
 }
 
-// ===== FETCH DATA =====
+// ===== FETCH =====
 async function fetchSheetData(customerNumber) {
-
   const apiUrl = "https://script.google.com/macros/s/AKfycbyr70myZuDAfCsVCdPlNcgskFTydg236p6kdNrbnB_1JaFvIRL2ckXbB_zruGk7orrg4w/exec?cust=" + customerNumber;
-
-  console.log("🌐 Fetching:", apiUrl);
 
   const res = await fetch(apiUrl);
   const data = await res.json();
-
-  console.log("📥 RESPONSE:", data);
 
   if (data.error) throw new Error();
 
@@ -112,13 +111,10 @@ async function init() {
     window.fileId3 = data.url3;
     window.sheetTimestamp = data.timestamp;
 
-    console.log("✅ DATA LOADED:", data);
-
     loadImages();
 
-  } catch (e) {
-    console.error("❌ ERROR:", e);
-    showError("No quotations found", "Check console (F12)");
+  } catch {
+    showError("No quotations found", "Please check customer data");
   }
 }
 
@@ -126,21 +122,21 @@ async function init() {
 function loadImages() {
 
   const models = [
-    {id: formatDriveUrl(fileId1), label:"Model 1"},
-    {id: formatDriveUrl(fileId2), label:"Model 2"},
-    {id: formatDriveUrl(fileId3), label:"Model 3"}
+    {data: formatDriveUrls(fileId1), label:"Model 1"},
+    {data: formatDriveUrls(fileId2), label:"Model 2"},
+    {data: formatDriveUrls(fileId3), label:"Model 3"}
   ];
 
   let html = "";
 
   models.forEach((m,i)=>{
-    if(!m.id) return;
+    if(!m.data) return;
 
     html += `
     <div class="card">
       <h4>${m.label}</h4>
-      <div class="image-container">
-        <img class="quote-img" src="${m.id}">
+      <div class="image-container" onclick="window.open('${m.data.full}','_blank')">
+        <img class="quote-img" src="${m.data.img}">
       </div>
     </div>`;
   });
@@ -157,8 +153,6 @@ function loadImages() {
 
       let sec = getRemainingSeconds();
       const parent = this.parentElement;
-
-      console.warn("⚠️ Image failed:", img.src, "Countdown:", sec);
 
       if(sec <= 0){
         parent.innerHTML = `<img class="quote-img" src="${img.src}">`;
