@@ -122,12 +122,9 @@ function loadImages() {
   ];
 
   let html="";
-  let count=0;
 
   models.forEach((m,i)=>{
     if(!m.id) return;
-
-    count++;
 
     html+=`
     <div class="card">
@@ -145,7 +142,7 @@ function loadImages() {
 
   document.getElementById("content").innerHTML=html;
 
-  // ERROR → COUNTDOWN
+  // ===== ERROR → COUNTDOWN =====
   document.querySelectorAll(".quote-img").forEach((img,i)=>{
 
     img.onerror=function(){
