@@ -1,369 +1,205 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chavan Motors - Quotation</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .container {
-      max-width: 450px;
-      width: 100%;
-    }
-    
-    .card {
-      background: white;
-      border-radius: 20px;
-      padding: 24px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      animation: slideUp 0.5s ease-out;
-      margin-bottom: 20px;
-    }
-    
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
-    .header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    
-    .header h1 {
-      font-size: 24px;
-      color: #333;
-      margin-bottom: 8px;
-    }
-    
-    .header p {
-      color: #666;
-      font-size: 14px;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chavan Motors - Quotation</title>
 
-    .model-label {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: bold;
-      margin-bottom: 12px;
-      text-align: center;
-    }
-    
-    .image-container {
-      position: relative;
-      margin: 20px 0;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #f5f5f5;
-      min-height: 200px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-
-    .image-container::after {
-      content: "👆 Tap to open image";
-      position: absolute;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.7);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 12px;
-      opacity: 0;
-      animation: fadeInOut 3s ease-in-out infinite;
-    }
-
-    @keyframes fadeInOut {
-      0%, 100% { opacity: 0; }
-      50% { opacity: 1; }
-    }
-    
-    .quote-img {
-      width: 100%;
-      height: auto;
-      display: block;
-      max-height: 500px;
-      object-fit: contain;
-    }
-    
-    .loading {
-      text-align: center;
-      padding: 40px 20px;
-      color: #999;
-    }
-    
-    .spinner {
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #667eea;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 16px;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    .btn {
-      width: 100%;
-      padding: 16px;
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    
-    .btn-whatsapp {
-      background: #25D366;
-      color: white;
-      margin-bottom: 12px;
-    }
-    
-    .btn-whatsapp:active {
-      background: #128C7E;
-      transform: scale(0.98);
-    }
-    
-    .instructions {
-      background: #f8f9fa;
-      border-radius: 12px;
-      padding: 16px;
-      margin-top: 16px;
-    }
-    
-    .instructions h3 {
-      font-size: 14px;
-      color: #333;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .instructions ol {
-      padding-left: 20px;
-      color: #666;
-      font-size: 13px;
-      line-height: 1.8;
-    }
-
-    .instructions strong {
-      color: #25D366;
-    }
-    
-    .error {
-      text-align: center;
-      padding: 40px 20px;
-    }
-    
-    .error-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-    }
-    
-    .error h2 {
-      color: #e74c3c;
-      font-size: 18px;
-      margin-bottom: 8px;
-    }
-    
-    .error p {
-      color: #666;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .whatsapp-section {
-      position: sticky;
-      bottom: 0;
-      background: white;
-      padding: 16px 24px;
-      border-radius: 20px 20px 0 0;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
-      margin: 0 -20px -20px -20px;
-    }
-  </style>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+}
+.container{max-width:450px;width:100%;padding:20px;}
+.card{
+  background:white;border-radius:20px;padding:24px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  margin-bottom:20px;
+}
+.header{text-align:center;margin-bottom:20px;}
+.model-label{
+  background:#667eea;color:white;padding:8px;border-radius:8px;
+  text-align:center;margin-bottom:10px;font-weight:bold;
+}
+.image-container{
+  margin:15px 0;border-radius:12px;overflow:hidden;
+  background:#f5f5f5;min-height:200px;
+  display:flex;align-items:center;justify-content:center;
+}
+.quote-img{width:100%;max-height:500px;object-fit:contain;}
+.loading{text-align:center;padding:40px;color:#999;}
+.spinner{
+  border:3px solid #eee;border-top:3px solid #667eea;
+  border-radius:50%;width:40px;height:40px;
+  animation:spin 1s linear infinite;margin:auto;
+}
+@keyframes spin{100%{transform:rotate(360deg);}}
+.btn{width:100%;padding:16px;border:none;border-radius:12px;font-size:16px;font-weight:600;}
+.btn-whatsapp{background:#25D366;color:white;}
+.error{text-align:center;padding:30px;}
+</style>
 </head>
+
 <body>
-  <div class="container">
+<div class="container">
+<div class="card">
+<div class="header">
+<h2>🚗 Chavan Motors</h2>
+<p>Your Quotation is Ready</p>
+</div>
+
+<div id="content">
+<div class="loading">
+<div class="spinner"></div>
+<p>Loading quotations...</p>
+</div>
+</div>
+
+</div>
+</div>
+
+<script>
+
+// ===== PARAMS =====
+const params = new URLSearchParams(window.location.search);
+const customer = params.get("cust");
+const name = params.get("custname");
+const dse = params.get("dse");
+const dsemob = params.get("dsemob");
+
+// ===== FETCH FROM APPS SCRIPT =====
+async function fetchSheetData(customerNumber) {
+
+  const apiUrl = "https://script.google.com/macros/s/AKfycbyr70myZuDAfCsVCdPlNcgskFTydg236p6kdNrbnB_1JaFvIRL2ckXbB_zruGk7orrg4w/exec?cust=" + customerNumber;
+
+  const res = await fetch(apiUrl);
+  const data = await res.json();
+
+  if (data.error) throw new Error();
+
+  return data;
+}
+
+// ===== COUNTDOWN =====
+function getRemainingSeconds() {
+  if (!window.sheetTimestamp) return 15;
+
+  const created = new Date(window.sheetTimestamp).getTime();
+  const now = new Date().getTime();
+
+  return Math.max(15 - Math.floor((now - created)/1000), 0);
+}
+
+// ===== INIT =====
+init();
+
+async function init() {
+  try {
+    const data = await fetchSheetData(customer);
+
+    window.fileId1 = data.url1;
+    window.fileId2 = data.url2;
+    window.fileId3 = data.url3;
+    window.sheetTimestamp = data.timestamp;
+
+    loadImages();
+
+  } catch {
+    showError("No data found", "Check customer number");
+  }
+}
+
+// ===== LOAD IMAGES =====
+function loadImages() {
+
+  const models = [
+    {id:fileId1,label:"Model 1"},
+    {id:fileId2,label:"Model 2"},
+    {id:fileId3,label:"Model 3"}
+  ];
+
+  let html="";
+  let count=0;
+
+  models.forEach((m,i)=>{
+    if(!m.id) return;
+
+    count++;
+
+    html+=`
     <div class="card">
-      <div class="header">
-        <h1>🚗 Chavan Motors</h1>
-        <p>Your Quotation is Ready</p>
+      <div class="model-label">${m.label}</div>
+      <div class="image-container">
+        <img class="quote-img" src="${m.id}">
       </div>
-      
-      <div id="content">
-        <div class="loading">
-          <div class="spinner"></div>
-          <p>Loading your quotations...</p>
-        </div>
-      </div>
-    </div>
-  </div>
+    </div>`;
+  });
 
-  <script>
-    // Get URL parameters
-    const params = new URLSearchParams(window.location.search);
-    const fileId1 = params.get("fileId1");
-    const fileId2 = params.get("fileId2");
-    const fileId3 = params.get("fileId3");
-    const customer = params.get("cust");
-    const name = params.get("custname");
-    const dse = params.get("dse");
-    const dsemob = params.get("dsemob");
+  html+=`
+  <div class="card">
+    <button class="btn btn-whatsapp" onclick="sendWhatsApp()">💬 Send WhatsApp</button>
+  </div>`;
 
-    console.log("Parameters:", { fileId1, fileId2, fileId3, customer, name });
+  document.getElementById("content").innerHTML=html;
 
-    // Validate required parameters
-    if (!customer || !name) {
-      showError("Missing required information", "Please use the link from AppSheet");
-    } else if (!fileId1 && !fileId2 && !fileId3) {
-      showError("No quotations found", "No models have been selected");
-    } else {
-      loadImages();
-    }
+  // ERROR → COUNTDOWN
+  document.querySelectorAll(".quote-img").forEach((img,i)=>{
 
-    function loadImages() {
-      const models = [
-        { id: fileId1, label: "Model 1" },
-        { id: fileId2, label: "Model 2" },
-        { id: fileId3, label: "Model 3" }
-      ];
+    img.onerror=function(){
 
-      let contentHtml = '';
-      let modelCount = 0;
+      let sec=getRemainingSeconds();
+      const parent=this.parentElement;
 
-      // Generate HTML for each available model
-      models.forEach((model, index) => {
-        if (model.id) {
-          modelCount++;
-          const imgUrl = `https://drive.google.com/thumbnail?id=${model.id}&sz=w1000`;
-          const directImageUrl = `https://drive.google.com/uc?export=view&id=${model.id}`;
-          
-          contentHtml += `
-            <div class="card">
-              <div class="model-label">${model.label}</div>
-              <div class="image-container" onclick="window.open('${directImageUrl}', '_blank')">
-                <img class="quote-img" src="${imgUrl}" alt="${model.label} Quotation">
-              </div>
-            </div>
-          `;
+      if(sec<=0){
+        parent.innerHTML=`<img class="quote-img" src="${img.src}">`;
+        return;
+      }
+
+      parent.innerHTML=`
+      <div class="error">
+        ⏳ Retry in <span id="t${i}">${sec}</span>s
+      </div>`;
+
+      const el=document.getElementById(`t${i}`);
+
+      const timer=setInterval(()=>{
+        sec--;
+        el.textContent=sec;
+
+        if(sec<=0){
+          clearInterval(timer);
+          parent.innerHTML=`<img class="quote-img" src="${img.src}">`;
         }
-      });
+      },1000);
+    };
 
-      // Add WhatsApp button and instructions
-      contentHtml += `
-        <div class="card">
-          <button class="btn btn-whatsapp" onclick="sendWhatsApp()">
-            <span style="font-size: 20px;">💬</span>
-            Send WhatsApp Message
-          </button>
-          
-          <div class="instructions">
-            <h3>📤 How to share ${modelCount > 1 ? 'images' : 'the image'} (NO URL attached):</h3>
-            <ol>
-              <li><strong>Tap any image above</strong> - it will open in full screen</li>
-              <li><strong>Long-press</strong> the full-screen image</li>
-              <li>Select <strong>"Share"</strong> from the menu</li>
-              <li>Choose <strong>WhatsApp</strong> → Select customer → Send</li>
-              <li>✅ <strong>Only the image will be shared - no webpage link!</strong></li>
-              ${modelCount > 1 ? '<li>Repeat for other models if needed</li>' : ''}
-            </ol>
-          </div>
-        </div>
-      `;
+  });
+}
 
-      document.getElementById('content').innerHTML = contentHtml;
-
-      // Check if images loaded successfully
-      document.querySelectorAll('.quote-img').forEach((img, index) => {
-        img.onload = function() {
-          console.log(`✅ Model ${index + 1} loaded successfully`);
-        };
-        
-        img.onerror = function() {
-          this.parentElement.innerHTML = `
-            <div class="error">
-              <div class="error-icon">⚠️</div>
-              <h2>Image not found</h2>
-              <p>Model ${index + 1} could not be loaded</p>
-            </div>
-          `;
-        };
-      });
-    }
-
-    function sendWhatsApp() {
-      const modelCount = [fileId1, fileId2, fileId3].filter(id => id).length;
-      const modelsText = modelCount > 1 ? `${modelCount} quotations` : 'quotation';
-
-      const message = `🙏 Hello ${name},
+// ===== WHATSAPP =====
+function sendWhatsApp(){
+const msg=`🙏 Hello ${name},
 
 Welcome to *Chavan Automobiles* 🚘
 
-Please find your quotation attached 📄.
-For any queries, Feel free to Contact.
+Please find your quotation.
 
-For quick support, contact:
-👤 ${dse || 'Sales Executive'}
-📞 ${dsemob || 'Contact Number'}
+👤 ${dse}
+📞 ${dsemob}
 
-Thank you for choosing us!
-*Chavan Automobiles Team*`;
+Thank you!`;
 
+window.location.href=`https://wa.me/${customer}?text=${encodeURIComponent(msg)}`;
+}
 
-      const whatsappUrl = `https://wa.me/${customer}?text=${encodeURIComponent(message)}`;
-      window.location.href = whatsappUrl;
-    }
+// ===== ERROR =====
+function showError(t,m){
+document.getElementById("content").innerHTML=`<div class="error"><h3>${t}</h3><p>${m}</p></div>`;
+}
 
-    function showError(title, message) {
-      document.getElementById('content').innerHTML = `
-        <div class="error">
-          <div class="error-icon">⚠️</div>
-          <h2>${title}</h2>
-          <p>${message}</p>
-        </div>
-      `;
-    }
-  </script>
+</script>
 </body>
 </html>
-
-
