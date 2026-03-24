@@ -17,10 +17,26 @@ body{
   background:white;padding:20px;border-radius:20px;
   margin-bottom:20px;
 }
-.image-container{min-height:200px;display:flex;align-items:center;justify-content:center;}
-.quote-img{width:100%;max-height:500px;}
+.image-container{
+  min-height:200px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.quote-img{
+  width:100%;
+  max-height:500px;
+  object-fit:contain;
+}
 .error{text-align:center;padding:20px;}
-.btn{width:100%;padding:15px;background:#25D366;color:white;border:none;border-radius:10px;}
+.btn{
+  width:100%;
+  padding:15px;
+  background:#25D366;
+  color:white;
+  border:none;
+  border-radius:10px;
+}
 </style>
 </head>
 
@@ -44,29 +60,32 @@ const name = params.get("custname");
 const dse = params.get("dse");
 const dsemob = params.get("dsemob");
 
-console.log("🔎 PARAMS:");
-console.log("cust:", customer);
-console.log("name:", name);
-console.log("dse:", dse);
-console.log("dsemob:", dsemob);
+console.log("🔎 PARAMS:", {customer,name,dse,dsemob});
 
-// ===== FETCH =====
+// ===== CONVERT FILE ID TO URL =====
+function formatDriveUrl(id) {
+  if (!id) return "";
+
+  id = id.trim();
+
+  if (id.startsWith("http")) return id;
+
+  return "https://drive.google.com/uc?export=view&id=" + id;
+}
+
+// ===== FETCH DATA =====
 async function fetchSheetData(customerNumber) {
 
-  console.log("📤 Sending:", customerNumber);
-
   const apiUrl = "https://script.google.com/macros/s/AKfycbyr70myZuDAfCsVCdPlNcgskFTydg236p6kdNrbnB_1JaFvIRL2ckXbB_zruGk7orrg4w/exec?cust=" + customerNumber;
-  console.log("🌐 URL:", apiUrl);
+
+  console.log("🌐 Fetching:", apiUrl);
 
   const res = await fetch(apiUrl);
   const data = await res.json();
 
   console.log("📥 RESPONSE:", data);
 
-  if (data.error) {
-    console.error("❌ Backend error:", data);
-    throw new Error();
-  }
+  if (data.error) throw new Error();
 
   return data;
 }
@@ -97,8 +116,8 @@ async function init() {
 
     loadImages();
 
-  } catch (err) {
-    console.error("❌ INIT ERROR:", err);
+  } catch (e) {
+    console.error("❌ ERROR:", e);
     showError("No quotations found", "Check console (F12)");
   }
 }
@@ -107,17 +126,17 @@ async function init() {
 function loadImages() {
 
   const models = [
-    {id:fileId1,label:"Model 1"},
-    {id:fileId2,label:"Model 2"},
-    {id:fileId3,label:"Model 3"}
+    {id: formatDriveUrl(fileId1), label:"Model 1"},
+    {id: formatDriveUrl(fileId2), label:"Model 2"},
+    {id: formatDriveUrl(fileId3), label:"Model 3"}
   ];
 
-  let html="";
+  let html = "";
 
   models.forEach((m,i)=>{
     if(!m.id) return;
 
-    html+=`
+    html += `
     <div class="card">
       <h4>${m.label}</h4>
       <div class="image-container">
@@ -126,36 +145,37 @@ function loadImages() {
     </div>`;
   });
 
-  html+=`<button class="btn" onclick="sendWhatsApp()">Send WhatsApp</button>`;
+  html += `
+  <button class="btn" onclick="sendWhatsApp()">💬 Send WhatsApp</button>`;
 
-  document.getElementById("content").innerHTML=html;
+  document.getElementById("content").innerHTML = html;
 
   // ===== ERROR + COUNTDOWN =====
   document.querySelectorAll(".quote-img").forEach((img,i)=>{
 
-    img.onerror=function(){
+    img.onerror = function(){
 
-      let sec=getRemainingSeconds();
-      const parent=this.parentElement;
+      let sec = getRemainingSeconds();
+      const parent = this.parentElement;
 
-      console.warn("⚠️ Image failed, countdown:", sec);
+      console.warn("⚠️ Image failed:", img.src, "Countdown:", sec);
 
-      if(sec<=0){
-        parent.innerHTML=`<img class="quote-img" src="${img.src}">`;
+      if(sec <= 0){
+        parent.innerHTML = `<img class="quote-img" src="${img.src}">`;
         return;
       }
 
-      parent.innerHTML=`⏳ Retry in <span id="t${i}">${sec}</span>s`;
+      parent.innerHTML = `⏳ Retry in <span id="t${i}">${sec}</span>s`;
 
-      const el=document.getElementById(`t${i}`);
+      const el = document.getElementById(`t${i}`);
 
-      const timer=setInterval(()=>{
+      const timer = setInterval(()=>{
         sec--;
-        el.textContent=sec;
+        el.textContent = sec;
 
-        if(sec<=0){
+        if(sec <= 0){
           clearInterval(timer);
-          parent.innerHTML=`<img class="quote-img" src="${img.src}">`;
+          parent.innerHTML = `<img class="quote-img" src="${img.src}">`;
         }
       },1000);
     };
@@ -165,14 +185,25 @@ function loadImages() {
 
 // ===== WHATSAPP =====
 function sendWhatsApp(){
-const msg=`Hello ${name}`;
 
-window.location.href=`https://wa.me/${customer}?text=${encodeURIComponent(msg)}`;
+const msg = `🙏 Hello ${name},
+
+Welcome to *Chavan Automobiles* 🚘
+
+Please find your quotation.
+
+👤 ${dse}
+📞 ${dsemob}
+
+Thank you!`;
+
+window.location.href =
+  `https://wa.me/${customer}?text=${encodeURIComponent(msg)}`;
 }
 
 // ===== ERROR =====
 function showError(t,m){
-document.getElementById("content").innerHTML=
+document.getElementById("content").innerHTML =
 `<div class="error">
 <h3>${t}</h3>
 <p>${m}</p>
@@ -180,5 +211,6 @@ document.getElementById("content").innerHTML=
 }
 
 </script>
+
 </body>
 </html>
