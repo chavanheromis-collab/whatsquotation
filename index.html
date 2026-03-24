@@ -14,7 +14,7 @@ body{
 }
 .container{max-width:450px;width:100%;padding:20px;}
 .card{
-  background:white;padding:20px;border-radius:20px;
+  background:white;padding:22px;border-radius:20px;
   margin-bottom:20px;
   box-shadow:0 15px 40px rgba(0,0,0,0.25);
 }
@@ -32,13 +32,13 @@ body{
 }
 .btn{
   width:100%;
-  padding:15px;
+  padding:16px;
   background:#25D366;
   color:white;
   border:none;
   border-radius:12px;
   font-weight:bold;
-  font-size:15px;
+  font-size:16px;
 }
 .info-box{
   background:#f8f9fa;
@@ -48,19 +48,21 @@ body{
   margin-top:15px;
 }
 .info-box ol{padding-left:18px;line-height:1.7;}
+
 .loading{
   text-align:center;
-  padding:25px;
+  padding:40px 20px;
 }
-.loading h3{margin-bottom:10px;}
-.step{
-  margin-top:10px;
-  font-size:14px;
-  color:#555;
+.loading h2{
+  font-size:24px;
+  color:#333;
 }
-.highlight{
-  color:#667eea;
+.big-model{
+  font-size:20px;
   font-weight:bold;
+  margin-bottom:10px;
+  text-align:center;
+  color:#444;
 }
 .error{text-align:center;padding:20px;}
 </style>
@@ -75,18 +77,7 @@ body{
 <div id="content">
 
 <div class="loading">
-  <h3>⏳ Preparing Your Quotation...</h3>
-  <p id="loadingText" class="step">🔍 Checking your details...</p>
-
-  <div class="info-box">
-    <strong>⚙️ Processing Steps:</strong>
-    <ol>
-      <li>📱 Verifying your mobile number</li>
-      <li>📂 Fetching your quotation data</li>
-      <li>🖼️ Preparing images for preview</li>
-      <li>🚀 Almost ready...</li>
-    </ol>
-  </div>
+  <h2>⏳ Preparing Your Quotation...</h2>
 </div>
 
 </div>
@@ -102,23 +93,8 @@ const name = params.get("custname");
 const dse = params.get("dse");
 const dsemob = params.get("dsemob");
 
-// ===== DYNAMIC LOADING TEXT =====
-const loadingMessages = [
-  "🔍 Checking your details...",
-  "📱 Verifying customer record...",
-  "📂 Fetching quotation data...",
-  "🖼️ Preparing images...",
-  "🚀 Almost ready..."
-];
-
-let loadIndex = 0;
-const loadingInterval = setInterval(()=>{
-  const el = document.getElementById("loadingText");
-  if(el){
-    el.textContent = loadingMessages[loadIndex];
-    loadIndex = (loadIndex + 1) % loadingMessages.length;
-  }
-},1500);
+// ===== CACHE =====
+const CACHE_KEY = "quotation_cache";
 
 // ===== DRIVE HANDLER =====
 function formatDriveUrls(id) {
@@ -133,25 +109,44 @@ function formatDriveUrls(id) {
   };
 }
 
-// ===== FETCH =====
+// ===== FETCH WITH CACHE =====
 async function fetchSheetData(customerNumber) {
+
+  const cached = localStorage.getItem(CACHE_KEY);
+  if (cached) {
+    const parsed = JSON.parse(cached);
+    if (Date.now() - parsed.time < 30000) {
+      return parsed.data;
+    }
+  }
+
   const apiUrl = "https://script.google.com/macros/s/AKfycbyr70myZuDAfCsVCdPlNcgskFTydg236p6kdNrbnB_1JaFvIRL2ckXbB_zruGk7orrg4w/exec?cust=" + customerNumber;
 
   const res = await fetch(apiUrl);
   const data = await res.json();
 
   if (data.error) throw new Error();
+
+  localStorage.setItem(CACHE_KEY, JSON.stringify({
+    time: Date.now(),
+    data
+  }));
+
   return data;
 }
 
-// ===== COUNTDOWN =====
-function getRemainingSeconds() {
-  if (!window.sheetTimestamp) return 15;
+// ===== PRELOAD =====
+function preloadImages(models) {
+  return Promise.all(models.map(m => {
+    return new Promise(resolve => {
+      if (!m.data) return resolve();
 
-  const created = new Date(window.sheetTimestamp).getTime();
-  const now = new Date().getTime();
-
-  return Math.max(15 - Math.floor((now - created)/1000), 0);
+      const img = new Image();
+      img.src = m.data.img;
+      img.onload = resolve;
+      img.onerror = resolve;
+    });
+  }));
 }
 
 // ===== INIT =====
@@ -161,37 +156,32 @@ async function init() {
   try {
     const data = await fetchSheetData(customer);
 
-    window.fileId1 = data.url1;
-    window.fileId2 = data.url2;
-    window.fileId3 = data.url3;
-    window.sheetTimestamp = data.timestamp;
+    const models = [
+      {data: formatDriveUrls(data.url1), label:"🚘 Model 1"},
+      {data: formatDriveUrls(data.url2), label:"🚘 Model 2"},
+      {data: formatDriveUrls(data.url3), label:"🚘 Model 3"}
+    ];
 
-    clearInterval(loadingInterval);
-    loadImages();
+    await preloadImages(models);
+
+    loadImages(models);
 
   } catch {
-    clearInterval(loadingInterval);
     showNoDataInstructions();
   }
 }
 
 // ===== LOAD IMAGES =====
-function loadImages() {
-
-  const models = [
-    {data: formatDriveUrls(fileId1), label:"🚘 Model 1"},
-    {data: formatDriveUrls(fileId2), label:"🚘 Model 2"},
-    {data: formatDriveUrls(fileId3), label:"🚘 Model 3"}
-  ];
+function loadImages(models) {
 
   let html = "";
 
-  models.forEach((m,i)=>{
+  models.forEach((m)=>{
     if(!m.data) return;
 
     html += `
     <div class="card">
-      <h4>${m.label}</h4>
+      <div class="big-model">${m.label}</div>
       <div class="image-container" onclick="window.open('${m.data.full}','_blank')">
         <img class="quote-img" src="${m.data.img}">
       </div>
@@ -206,7 +196,7 @@ function loadImages() {
       <strong>📤 How to share image (NO LINK):</strong>
       <ol>
         <li>👆 Tap image → open full screen</li>
-        <li>📱 Long press on image</li>
+        <li>📱 Long press</li>
         <li>📤 Tap Share</li>
         <li>🟢 Select WhatsApp</li>
         <li>✅ Send to customer</li>
@@ -216,29 +206,10 @@ function loadImages() {
 
   document.getElementById("content").innerHTML = html;
 
-  // ERROR + COUNTDOWN
-  document.querySelectorAll(".quote-img").forEach((img,i)=>{
+  // SMART FALLBACK
+  document.querySelectorAll(".quote-img").forEach(img=>{
     img.onerror = function(){
-      let sec = getRemainingSeconds();
-      const parent = this.parentElement;
-
-      parent.innerHTML = `
-      <div class="loading">
-        ⏳ Preparing image... <br>
-        🔄 Retrying in <span id="t${i}">${sec}</span>s
-      </div>`;
-
-      const el = document.getElementById(`t${i}`);
-
-      const timer = setInterval(()=>{
-        sec--;
-        el.textContent = sec;
-
-        if(sec <= 0){
-          clearInterval(timer);
-          parent.innerHTML = `<img class="quote-img" src="${img.src}">`;
-        }
-      },1000);
+      img.src = img.src.replace("thumbnail","uc?export=view&id=");
     };
   });
 }
@@ -271,15 +242,14 @@ document.getElementById("content").innerHTML =
 <div class="card">
   <div class="error">
     <h3>⚠️ Quotation Not Found</h3>
-    <p>Please follow steps below 👇</p>
   </div>
 
   <div class="info-box">
     <ol>
-      <li>📱 Open AppSheet App</li>
+      <li>📱 Open AppSheet</li>
       <li>👤 Select Customer Name</li>
-      <li>✏️ Tap Edit (emoji icon)</li>
-      <li>💾 Click Save</li>
+      <li>✏️ Tap Edit</li>
+      <li>💾 Save</li>
       <li>🔄 Open link again</li>
     </ol>
   </div>
