@@ -16,6 +16,7 @@ body{
 .card{
   background:white;padding:20px;border-radius:20px;
   margin-bottom:20px;
+  box-shadow:0 15px 40px rgba(0,0,0,0.25);
 }
 .image-container{
   min-height:200px;
@@ -35,7 +36,31 @@ body{
   background:#25D366;
   color:white;
   border:none;
-  border-radius:10px;
+  border-radius:12px;
+  font-weight:bold;
+  font-size:15px;
+}
+.info-box{
+  background:#f8f9fa;
+  padding:15px;
+  border-radius:12px;
+  font-size:13px;
+  margin-top:15px;
+}
+.info-box ol{padding-left:18px;line-height:1.7;}
+.loading{
+  text-align:center;
+  padding:25px;
+}
+.loading h3{margin-bottom:10px;}
+.step{
+  margin-top:10px;
+  font-size:14px;
+  color:#555;
+}
+.highlight{
+  color:#667eea;
+  font-weight:bold;
 }
 .error{text-align:center;padding:20px;}
 </style>
@@ -46,8 +71,25 @@ body{
 <div class="container">
 <div class="card">
 <h2>🚗 Chavan Motors</h2>
-<p>Loading quotations...</p>
-<div id="content"></div>
+
+<div id="content">
+
+<div class="loading">
+  <h3>⏳ Preparing Your Quotation...</h3>
+  <p id="loadingText" class="step">🔍 Checking your details...</p>
+
+  <div class="info-box">
+    <strong>⚙️ Processing Steps:</strong>
+    <ol>
+      <li>📱 Verifying your mobile number</li>
+      <li>📂 Fetching your quotation data</li>
+      <li>🖼️ Preparing images for preview</li>
+      <li>🚀 Almost ready...</li>
+    </ol>
+  </div>
+</div>
+
+</div>
 </div>
 </div>
 
@@ -55,25 +97,39 @@ body{
 
 // ===== PARAMS =====
 const params = new URLSearchParams(window.location.search);
-
 const customer = params.get("cust");
 const name = params.get("custname");
 const dse = params.get("dse");
 const dsemob = params.get("dsemob");
 
-// ===== DRIVE HANDLER (v1 LOGIC) =====
+// ===== DYNAMIC LOADING TEXT =====
+const loadingMessages = [
+  "🔍 Checking your details...",
+  "📱 Verifying customer record...",
+  "📂 Fetching quotation data...",
+  "🖼️ Preparing images...",
+  "🚀 Almost ready..."
+];
+
+let loadIndex = 0;
+const loadingInterval = setInterval(()=>{
+  const el = document.getElementById("loadingText");
+  if(el){
+    el.textContent = loadingMessages[loadIndex];
+    loadIndex = (loadIndex + 1) % loadingMessages.length;
+  }
+},1500);
+
+// ===== DRIVE HANDLER =====
 function formatDriveUrls(id) {
   if (!id) return null;
-
   id = id.trim();
 
-  if (id.startsWith("http")) {
-    return { img: id, full: id };
-  }
+  if (id.startsWith("http")) return { img:id, full:id };
 
   return {
-    img: `https://drive.google.com/thumbnail?id=${id}&sz=w1000`,
-    full: `https://drive.google.com/uc?export=view&id=${id}`
+    img:`https://drive.google.com/thumbnail?id=${id}&sz=w1000`,
+    full:`https://drive.google.com/uc?export=view&id=${id}`
   };
 }
 
@@ -85,7 +141,6 @@ async function fetchSheetData(customerNumber) {
   const data = await res.json();
 
   if (data.error) throw new Error();
-
   return data;
 }
 
@@ -111,10 +166,12 @@ async function init() {
     window.fileId3 = data.url3;
     window.sheetTimestamp = data.timestamp;
 
+    clearInterval(loadingInterval);
     loadImages();
 
   } catch {
-    showError("No quotations found", "Please check customer data");
+    clearInterval(loadingInterval);
+    showNoDataInstructions();
   }
 }
 
@@ -122,9 +179,9 @@ async function init() {
 function loadImages() {
 
   const models = [
-    {data: formatDriveUrls(fileId1), label:"Model 1"},
-    {data: formatDriveUrls(fileId2), label:"Model 2"},
-    {data: formatDriveUrls(fileId3), label:"Model 3"}
+    {data: formatDriveUrls(fileId1), label:"🚘 Model 1"},
+    {data: formatDriveUrls(fileId2), label:"🚘 Model 2"},
+    {data: formatDriveUrls(fileId3), label:"🚘 Model 3"}
   ];
 
   let html = "";
@@ -142,24 +199,34 @@ function loadImages() {
   });
 
   html += `
-  <button class="btn" onclick="sendWhatsApp()">💬 Send WhatsApp</button>`;
+  <div class="card">
+    <button class="btn" onclick="sendWhatsApp()">💬 Send WhatsApp</button>
+
+    <div class="info-box">
+      <strong>📤 How to share image (NO LINK):</strong>
+      <ol>
+        <li>👆 Tap image → open full screen</li>
+        <li>📱 Long press on image</li>
+        <li>📤 Tap Share</li>
+        <li>🟢 Select WhatsApp</li>
+        <li>✅ Send to customer</li>
+      </ol>
+    </div>
+  </div>`;
 
   document.getElementById("content").innerHTML = html;
 
-  // ===== ERROR + COUNTDOWN =====
+  // ERROR + COUNTDOWN
   document.querySelectorAll(".quote-img").forEach((img,i)=>{
-
     img.onerror = function(){
-
       let sec = getRemainingSeconds();
       const parent = this.parentElement;
 
-      if(sec <= 0){
-        parent.innerHTML = `<img class="quote-img" src="${img.src}">`;
-        return;
-      }
-
-      parent.innerHTML = `⏳ Retry in <span id="t${i}">${sec}</span>s`;
+      parent.innerHTML = `
+      <div class="loading">
+        ⏳ Preparing image... <br>
+        🔄 Retrying in <span id="t${i}">${sec}</span>s
+      </div>`;
 
       const el = document.getElementById(`t${i}`);
 
@@ -173,34 +240,49 @@ function loadImages() {
         }
       },1000);
     };
-
   });
 }
 
 // ===== WHATSAPP =====
 function sendWhatsApp(){
 
-const msg = `🙏 Hello ${name},
+const message = `🙏 Hello ${name},
 
 Welcome to *Chavan Automobiles* 🚘
 
-Please find your quotation.
+Please find your quotation attached 📄.
+For any queries, Feel free to Contact.
 
-👤 ${dse}
-📞 ${dsemob}
+For quick support, contact:
+👤 ${dse || 'Sales Executive'}
+📞 ${dsemob || 'Contact Number'}
 
-Thank you!`;
+Thank you for choosing us!
+*Chavan Automobiles Team*`;
 
 window.location.href =
-  `https://wa.me/${customer}?text=${encodeURIComponent(msg)}`;
+`https://wa.me/${customer}?text=${encodeURIComponent(message)}`;
 }
 
-// ===== ERROR =====
-function showError(t,m){
+// ===== NO DATA =====
+function showNoDataInstructions(){
 document.getElementById("content").innerHTML =
-`<div class="error">
-<h3>${t}</h3>
-<p>${m}</p>
+`
+<div class="card">
+  <div class="error">
+    <h3>⚠️ Quotation Not Found</h3>
+    <p>Please follow steps below 👇</p>
+  </div>
+
+  <div class="info-box">
+    <ol>
+      <li>📱 Open AppSheet App</li>
+      <li>👤 Select Customer Name</li>
+      <li>✏️ Tap Edit (emoji icon)</li>
+      <li>💾 Click Save</li>
+      <li>🔄 Open link again</li>
+    </ol>
+  </div>
 </div>`;
 }
 
