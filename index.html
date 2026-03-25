@@ -18,59 +18,26 @@ body{
   margin-bottom:20px;
   box-shadow:0 15px 40px rgba(0,0,0,0.25);
 }
-
-.loading{
-  text-align:center;
-  padding:40px 10px;
-}
-.loading h1{
-  font-size:22px;
-  margin-bottom:15px;
-}
-.loading p{
-  font-size:18px;
-  color:#555;
-}
-
-.model-title{
-  font-size:18px;
-  font-weight:bold;
-  margin-bottom:10px;
-}
-
+.loading{text-align:center;padding:40px 10px;}
+.error{text-align:center;padding:20px;}
+.model-title{font-size:18px;font-weight:bold;margin-bottom:10px;}
 .image-container{
-  min-height:200px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  min-height:200px;display:flex;
+  align-items:center;justify-content:center;
   cursor:pointer;
 }
-
 .quote-img{
-  width:100%;
-  max-height:500px;
-  object-fit:contain;
+  width:100%;max-height:500px;object-fit:contain;
 }
-
 .btn{
-  width:100%;
-  padding:15px;
-  background:#25D366;
-  color:white;
-  border:none;
-  border-radius:12px;
-  font-weight:bold;
+  width:100%;padding:15px;
+  background:#25D366;color:white;
+  border:none;border-radius:12px;font-weight:bold;
 }
-
 .info-box{
-  background:#f8f9fa;
-  padding:15px;
-  border-radius:12px;
-  font-size:16px;
-  margin-top:15px;
+  background:#f8f9fa;padding:15px;
+  border-radius:12px;font-size:16px;margin-top:15px;
 }
-
-.error{text-align:center;padding:20px;}
 </style>
 </head>
 
@@ -78,14 +45,12 @@ body{
 
 <div class="container">
 <div class="card">
-
 <div id="content">
 <div class="loading">
   <h1>⏳ Preparing Your Quotation...</h1>
   <p id="loadingText">🔍 Checking your details...</p>
 </div>
 </div>
-
 </div>
 </div>
 
@@ -117,7 +82,7 @@ const interval=setInterval(()=>{
   }
 },1200);
 
-// DRIVE URL
+// DRIVE FORMAT
 function formatDriveUrls(id){
   if(!id) return null;
   id=id.trim();
@@ -141,12 +106,12 @@ init();
 
 async function init(){
   try{
-    const data=await fetchData();
+    const data = await fetchData();
 
-    const models=[
-      {data:formatDriveUrls(data.url1),label:"🚘 Model 1"},
-      {data:formatDriveUrls(data.url2),label:"🚘 Model 2"},
-      {data:formatDriveUrls(data.url3),label:"🚘 Model 3"}
+    const models = [
+      { data: formatDriveUrls(data.url1), label:"🚘 Model 1", selected:data.model1 },
+      { data: formatDriveUrls(data.url2), label:"🚘 Model 2", selected:data.model2 },
+      { data: formatDriveUrls(data.url3), label:"🚘 Model 3", selected:data.model3 }
     ];
 
     clearInterval(interval);
@@ -158,45 +123,62 @@ async function init(){
   }
 }
 
-// LOAD
+// LOAD LOGIC
 function load(models){
 
-let html="";
+let html = "";
+let showGuide = false;
 
-models.forEach(m=>{
-if(!m.data) return;
+models.forEach(m => {
 
-html+=`
-<div class="card">
-<div class="model-title">${m.label}</div>
-<div class="image-container" onclick="window.open('${m.data.full}','_blank')">
-<img class="quote-img" src="${m.data.img}">
-</div>
-</div>`;
+  // 🚨 selected but no pdf
+  if (m.selected && !m.data) {
+    showGuide = true;
+    return;
+  }
+
+  if (!m.data) return;
+
+  html += `
+  <div class="card">
+    <div class="model-title">${m.label}</div>
+    <div class="image-container" onclick="window.open('${m.data.full}','_blank')">
+      <img class="quote-img" src="${m.data.img}">
+    </div>
+  </div>`;
 });
 
-html+=`
-<div class="card">
-<button class="btn" onclick="send()">💬 Send WhatsApp</button>
+// 🚨 SHOW GUIDE
+if (showGuide) {
+  html = `
+  <div class="card error">
+    <h3>⚠️ Quotation Not Ready</h3>
+    <p>📱 Go to AppSheet → Select Customer → ✏️ Edit → Save → Reopen</p>
+  </div>`;
+} else {
+  html += `
+  <div class="card">
+    <button class="btn" onclick="send()">💬 Send WhatsApp</button>
 
-<div class="info-box">
-<strong>📤 How to share Quotation:</strong>
-<ol>
-<li>👆 Long Press on image</li>
-<li>📋 Select Copy Image</li>
-<li>📤 Click Share → WhatsApp</li>
-<li>✅ Send</li>
-</ol>
-</div>
-</div>`;
+    <div class="info-box">
+    <strong>📤 How to share Quotation:</strong>
+    <ol>
+    <li>👆 Long Press on image</li>
+    <li>📋 Copy Image</li>
+    <li>📤 Share → WhatsApp</li>
+    <li>✅ Send</li>
+    </ol>
+    </div>
+  </div>`;
+}
 
-document.getElementById("content").innerHTML=html;
+document.getElementById("content").innerHTML = html;
 
-// fallback
+// fallback image fix
 document.querySelectorAll(".quote-img").forEach(img=>{
-img.onerror=function(){
-img.src=img.src.replace("thumbnail","uc?export=view&id=");
-};
+  img.onerror=function(){
+    img.src=img.src.replace("thumbnail","uc?export=view&id=");
+  };
 });
 
 }
