@@ -204,11 +204,12 @@ window.location.href=`https://wa.me/${customer}?text=${encodeURIComponent(msg)}`
 }
 
 // NO DATA
+const customerName = data.customerName || "Customer";
 function noData(){
 document.getElementById("content").innerHTML=
 `<div class="card error">
 <h3>⚠️ Quotation Not Found</h3>
-<p>📱 Go to AppSheet → Select Customer → ✏️ Edit → Save → Reopen</p>
+<p>📱 Go to AppSheet → Select Customer <b style="color:#d9534f">${customerName}</b> → ✏️ Edit → Save → Reopen</p>
 </div>`;
 }
 
