@@ -18,26 +18,61 @@ body{
   margin-bottom:20px;
   box-shadow:0 15px 40px rgba(0,0,0,0.25);
 }
-.loading{text-align:center;padding:40px 10px;}
-.error{text-align:center;padding:20px;}
-.model-title{font-size:18px;font-weight:bold;margin-bottom:10px;}
+.loading{
+  text-align:center;
+  padding:40px 10px;
+}
+.loading h1{font-size:22px;margin-bottom:15px;}
+.loading p{font-size:18px;color:#555;}
+
+.model-title{
+  font-size:18px;
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
 .image-container{
-  min-height:200px;display:flex;
-  align-items:center;justify-content:center;
+  min-height:200px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   cursor:pointer;
 }
+
 .quote-img{
-  width:100%;max-height:500px;object-fit:contain;
+  width:100%;
+  max-height:500px;
+  object-fit:contain;
 }
+
 .btn{
-  width:100%;padding:15px;
-  background:#25D366;color:white;
-  border:none;border-radius:12px;font-weight:bold;
+  width:100%;
+  padding:15px;
+  background:#25D366;
+  color:white;
+  border:none;
+  border-radius:12px;
+  font-weight:bold;
 }
+
 .info-box{
-  background:#f8f9fa;padding:15px;
-  border-radius:12px;font-size:16px;margin-top:15px;
+  background:#f8f9fa;
+  padding:15px;
+  border-radius:12px;
+  font-size:15px;
+  margin-top:15px;
 }
+
+.highlight{
+  background:#fff3cd;
+  color:#856404;
+  padding:6px 10px;
+  border-radius:8px;
+  font-weight:bold;
+  display:inline-block;
+}
+
+.error{text-align:center;padding:20px;}
 </style>
 </head>
 
@@ -45,12 +80,14 @@ body{
 
 <div class="container">
 <div class="card">
+
 <div id="content">
 <div class="loading">
   <h1>⏳ Preparing Your Quotation...</h1>
   <p id="loadingText">🔍 Checking your details...</p>
 </div>
 </div>
+
 </div>
 </div>
 
@@ -60,7 +97,7 @@ body{
 const params = new URLSearchParams(window.location.search);
 const customer = params.get("cust");
 const row = params.get("row");
-const name = params.get("custname");
+const name = params.get("custname") || "Customer";
 const dse = params.get("dse");
 const dsemob = params.get("dsemob");
 
@@ -82,16 +119,6 @@ const interval=setInterval(()=>{
   }
 },1200);
 
-// DRIVE FORMAT
-function formatDriveUrls(id){
-  if(!id) return null;
-  id=id.trim();
-  return {
-    img:`https://drive.google.com/thumbnail?id=${id}&sz=w1000`,
-    full:`https://drive.google.com/uc?export=view&id=${id}`
-  };
-}
-
 // FETCH
 async function fetchData(){
   const url=`https://script.google.com/macros/s/AKfycbyr70myZuDAfCsVCdPlNcgskFTydg236p6kdNrbnB_1JaFvIRL2ckXbB_zruGk7orrg4w/exec?cust=${customer}&row=${row}`;
@@ -101,6 +128,47 @@ async function fetchData(){
   return data;
 }
 
+// TIME CHECK
+function handleTime(timestamp){
+
+  const now = new Date();
+  const ts = new Date(timestamp);
+  const diff = (now - ts)/1000;
+
+  if(diff < 30){
+    let sec = 15;
+
+    document.getElementById("content").innerHTML =
+    `<div class="loading">
+      <h2>⏳ Generating Quotation...</h2>
+      <p>⏱️ Please wait <span id="count">${sec}</span> sec</p>
+    </div>`;
+
+    const int = setInterval(()=>{
+      sec--;
+      document.getElementById("count").innerText = sec;
+
+      if(sec <= 0){
+        clearInterval(int);
+        location.reload();
+      }
+    },1000);
+
+    return true;
+  }
+
+  if(diff < 60){
+    document.getElementById("content").innerHTML =
+    `<div class="card">
+      <h3>🚀 Quotation Ready</h3>
+      <p>🔄 Please refresh this page</p>
+    </div>`;
+    return true;
+  }
+
+  return false;
+}
+
 // INIT
 init();
 
@@ -108,14 +176,11 @@ async function init(){
   try{
     const data = await fetchData();
 
-    const models = [
-      { data: formatDriveUrls(data.url1), label:"🚘 Model 1", selected:data.model1 },
-      { data: formatDriveUrls(data.url2), label:"🚘 Model 2", selected:data.model2 },
-      { data: formatDriveUrls(data.url3), label:"🚘 Model 3", selected:data.model3 }
-    ];
-
     clearInterval(interval);
-    load(models);
+
+    if(handleTime(data.timestamp)) return;
+
+    load(data);
 
   }catch{
     clearInterval(interval);
@@ -123,62 +188,72 @@ async function init(){
   }
 }
 
-// LOAD LOGIC
-function load(models){
+// LOAD
+function load(data){
 
-let html = "";
-let showGuide = false;
+let html="";
 
-models.forEach(m => {
+function renderModel(model, url, label){
 
-  // 🚨 selected but no pdf
-  if (m.selected && !m.data) {
-    showGuide = true;
-    return;
+  if(model && !url){
+    return `
+    <div class="card">
+      <div class="model-title">${label}</div>
+      <p>⚠️ Quotation not generated</p>
+
+      <div class="info-box">
+      📱 Go to AppSheet → <br><br>
+      👉 <span class="highlight">Select Customer ${name}</span><br>
+      ✏️ Edit → Save → Reopen
+      </div>
+    </div>`;
   }
 
-  if (!m.data) return;
+  if(url){
 
-  html += `
-  <div class="card">
-    <div class="model-title">${m.label}</div>
-    <div class="image-container" onclick="window.open('${m.data.full}','_blank')">
-      <img class="quote-img" src="${m.data.img}">
-    </div>
-  </div>`;
-});
+    const img=`https://drive.google.com/thumbnail?id=${url}&sz=w1000`;
+    const full=`https://drive.google.com/uc?export=view&id=${url}`;
 
-// 🚨 SHOW GUIDE
-if (showGuide) {
-  html = `
-  <div class="card error">
-    <h3>⚠️ Quotation Not Ready</h3>
-    <p>📱 Go to AppSheet → Select Customer → ✏️ Edit → Save → Reopen</p>
-  </div>`;
-} else {
-  html += `
-  <div class="card">
-    <button class="btn" onclick="send()">💬 Send WhatsApp</button>
+    return `
+    <div class="card">
+      <div class="model-title">${label}</div>
 
-    <div class="info-box">
-    <strong>📤 How to share Quotation:</strong>
-    <ol>
-    <li>👆 Long Press on image</li>
-    <li>📋 Copy Image</li>
-    <li>📤 Share → WhatsApp</li>
-    <li>✅ Send</li>
-    </ol>
-    </div>
-  </div>`;
+      <div class="image-container" onclick="window.open('${full}','_blank')">
+        <img class="quote-img" src="${img}">
+      </div>
+    </div>`;
+  }
+
+  return "";
 }
+
+html += renderModel(data.model1, data.url1, "🚘 Model 1");
+html += renderModel(data.model2, data.url2, "🚘 Model 2");
+html += renderModel(data.model3, data.url3, "🚘 Model 3");
+
+html += `
+<div class="card">
+<button class="btn" onclick="send()">💬 Send WhatsApp</button>
+
+<div class="info-box">
+<strong>📤 How to share Quotation:</strong>
+<ol>
+<li>👆 Long Press on image</li>
+<li>📋 Copy Image</li>
+<li>📤 Share → WhatsApp</li>
+<li>✅ Send</li>
+</ol>
+</div>
+
+</div>`;
 
 document.getElementById("content").innerHTML = html;
 
-// fallback image fix
+// IMAGE FALLBACK
 document.querySelectorAll(".quote-img").forEach(img=>{
-  img.onerror=function(){
-    img.src=img.src.replace("thumbnail","uc?export=view&id=");
-  };
+img.onerror=function(){
+img.src=img.src.replace("thumbnail","uc?export=view&id=");
+};
 });
 
 }
@@ -204,12 +279,11 @@ window.location.href=`https://wa.me/${customer}?text=${encodeURIComponent(msg)}`
 }
 
 // NO DATA
-const customerName = data.customerName || "Customer";
 function noData(){
-document.getElementById("content").innerHTML=
+document.getElementById("content").innerHTML =
 `<div class="card error">
 <h3>⚠️ Quotation Not Found</h3>
-<p>📱 Go to AppSheet → Select Customer <b style="color:#d9534f">${customerName}</b> → ✏️ Edit → Save → Reopen</p>
+<p>📱 Go to AppSheet → ✏️ Edit → Save → Reopen</p>
 </div>`;
 }
 
