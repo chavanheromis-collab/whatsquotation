@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chavan Motors - Quotation</title>
+
+<style>
+body{
+  font-family:Arial;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  display:flex;justify-content:center;align-items:center;
+  min-height:100vh;margin:0;
+}
+.container{max-width:450px;width:100%;padding:20px;}
+.card{
+  background:white;padding:20px;border-radius:20px;
+  margin-bottom:20px;
+  box-shadow:0 15px 40px rgba(0,0,0,0.25);
+}
+.loading{
+  text-align:center;
+  padding:40px 10px;
+}
+.loading h1{font-size:22px;margin-bottom:15px;}
+.loading p{font-size:18px;color:#555;}
+
+.model-title{
+  font-size:18px;
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+.image-container{
+  min-height:200px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+
+.quote-img{
+  width:100%;
+  max-height:500px;
+  object-fit:contain;
+}
+
+.btn{
+  width:100%;
+  padding:15px;
+  background:#25D366;
+  color:white;
+  border:none;
+  border-radius:12px;
+  font-weight:bold;
+}
+
+.info-box{
+  background:#f8f9fa;
+  padding:15px;
+  border-radius:12px;
+  font-size:15px;
+  margin-top:15px;
+}
+
+.highlight{
+  background:#fff3cd;
+  color:#856404;
+  padding:6px 10px;
+  border-radius:8px;
+  font-weight:bold;
+  display:inline-block;
+}
+
+.error{text-align:center;padding:20px;}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<div class="card">
+
+<div id="content">
+<div class="loading">
+  <h1>⏳ Preparing Your Quotation...</h1>
+  <p id="loadingText">🔍 Checking your details...</p>
+</div>
+</div>
+
+</div>
+</div>
+
+<script>
+
+// PARAMS
+const params = new URLSearchParams(window.location.search);
+const customer = params.get("cust");
+const row = params.get("row");
+const name = params.get("custname") || "Customer";
+const dse = params.get("dse");
+const dsemob = params.get("dsemob");
+
+// LOADING TEXT
+const msgs = [
+  "🔍 Checking your details...",
+  "📱 Verifying customer record...",
+  "📂 Fetching quotation data...",
+  "🖼️ Preparing images...",
+  "🚀 Almost ready..."
+];
+
+let i=0;
+const interval=setInterval(()=>{
+  const el=document.getElementById("loadingText");
+  if(el){
+    el.textContent=msgs[i];
+    i=(i+1)%msgs.length;
+  }
+},1200);
+
+// FETCH
+async function fetchData(){
+  const url=`https://script.google.com/macros/s/AKfycbyr70myZuDAfCsVCdPlNcgskFTydg236p6kdNrbnB_1JaFvIRL2ckXbB_zruGk7orrg4w/exec?cust=${customer}&row=${row}`;
+  const res=await fetch(url);
+  const data=await res.json();
+  if(data.error) throw new Error();
+  return data;
+}
+
+// TIME CHECK
+function handleTime(timestamp){
+
+  const now = new Date();
+  const ts = new Date(timestamp);
+  const diff = (now - ts)/1000;
+
+  if(diff < 30){
+    let sec = 15;
+
+    document.getElementById("content").innerHTML =
+    `<div class="loading">
+      <h2>⏳ Generating Quotation...</h2>
+      <p>⏱️ Please wait <span id="count">${sec}</span> sec</p>
+    </div>`;
+
+    const int = setInterval(()=>{
+      sec--;
+      document.getElementById("count").innerText = sec;
+
+      if(sec <= 0){
+        clearInterval(int);
+        location.reload();
+      }
+    },1000);
+
+    return true;
+  }
+
+  if(diff < 60){
+    document.getElementById("content").innerHTML =
+    `<div class="card">
+      <h3>🚀 Quotation Ready</h3>
+      <p>🔄 Please refresh this page</p>
+    </div>`;
+    return true;
+  }
+
+  return false;
+}
+
+// INIT
+init();
+
+async function init(){
+  try{
+    const data = await fetchData();
+
+    clearInterval(interval);
+
+    if(handleTime(data.timestamp)) return;
+
+    load(data);
+
+  }catch{
+    clearInterval(interval);
+    noData();
+  }
+}
+
+// LOAD
+function load(data){
+
+let html="";
+
+function renderModel(model, url, label){
+
+  if(model && !url){
+    return `
+    <div class="card">
+      <div class="model-title">${label}</div>
+      <p>⚠️ Quotation not generated</p>
+
+      <div class="info-box">
+      📱 Go to AppSheet → <br><br>
+      👉 <span class="highlight">Select Customer ${name}</span><br>
+      ✏️ Edit → Save → Reopen
+      </div>
+    </div>`;
+  }
+
+  if(url){
+
+    const img=`https://drive.google.com/thumbnail?id=${url}&sz=w1000`;
+    const full=`https://drive.google.com/uc?export=view&id=${url}`;
+
+    return `
+    <div class="card">
+      <div class="model-title">${label}</div>
+
+      <div class="image-container" onclick="window.open('${full}','_blank')">
+        <img class="quote-img" src="${img}">
+      </div>
+    </div>`;
+  }
+
+  return "";
+}
+
+html += renderModel(data.model1, data.url1, "🚘 Model 1");
+html += renderModel(data.model2, data.url2, "🚘 Model 2");
+html += renderModel(data.model3, data.url3, "🚘 Model 3");
+
+html += `
+<div class="card">
+<button class="btn" onclick="send()">💬 Send WhatsApp</button>
+
+<div class="info-box">
+<strong>📤 How to share Quotation:</strong>
+<ol>
+<li>👆 Long Press on image</li>
+<li>📋 Copy Image</li>
+<li>📤 Share → WhatsApp</li>
+<li>✅ Send</li>
+</ol>
+</div>
+
+</div>`;
+
+document.getElementById("content").innerHTML = html;
+
+// IMAGE FALLBACK
+document.querySelectorAll(".quote-img").forEach(img=>{
+img.onerror=function(){
+img.src=img.src.replace("thumbnail","uc?export=view&id=");
+};
+});
+
+}
+
+// WHATSAPP
+function send(){
+
+const msg=`🙏 Hello ${name},
+
+Welcome to *Chavan Automobiles* 🚘
+
+Please find your quotation attached 📄.
+For any queries, Feel free to Contact.
+
+For quick support, contact:
+👤 ${dse || 'Sales Executive'}
+📞 ${dsemob || 'Contact Number'}
+
+Thank you for choosing us!
+*Chavan Automobiles Team*`;
+
+window.location.href=`https://wa.me/${customer}?text=${encodeURIComponent(msg)}`;
+}
+
+// NO DATA
+function noData(){
+document.getElementById("content").innerHTML =
+`<div class="card error">
+<h3>⚠️ Quotation Not Found</h3>
+<p>📱 Go to AppSheet → ✏️ Edit → Save → Reopen</p>
+</div>`;
+}
+
+</script>
+
+</body>
+</html>
