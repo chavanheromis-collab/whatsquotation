@@ -41,8 +41,10 @@ body{
 
 .quote-img{
   width:100%;
-  max-height:500px;
+  height:auto;
   object-fit:contain;
+  display:block;
+  border-radius:10px;
 }
 
 .btn{
@@ -53,6 +55,7 @@ body{
   border:none;
   border-radius:12px;
   font-weight:bold;
+  cursor:pointer;
 }
 
 .info-box{
@@ -73,25 +76,32 @@ body{
 }
 
 .error{text-align:center;padding:20px;}
+
+canvas{
+  display:none;
+}
 </style>
 </head>
 
 <body>
 
 <div class="container">
-<div class="card">
-
-<div id="content">
-<div class="loading">
-  <h1>⏳ Preparing Your Quotation...</h1>
-  <p id="loadingText">🔍 Checking your details...</p>
-</div>
-</div>
-
-</div>
+  <div class="card">
+    <div id="content">
+      <div class="loading">
+        <h1>⏳ Preparing Your Quotation...</h1>
+        <p id="loadingText">🔍 Checking your details...</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
+// ===========================
+// CONFIG
+// ===========================
+const API_URL = "PASTE_YOUR_DEPLOYED_APPS_SCRIPT_WEBAPP_URL_HERE";
+const TEMPLATE_IMAGE_URL = "PASTE_YOUR_PUBLIC_TEMPLATE_PNG_URL_HERE";
 
 // PARAMS
 const params = new URLSearchParams(window.location.search);
@@ -121,16 +131,15 @@ const interval=setInterval(()=>{
 
 // FETCH
 async function fetchData(){
-  const url=`https://script.google.com/macros/s/AKfycbyr70myZuDAfCsVCdPlNcgskFTydg236p6kdNrbnB_1JaFvIRL2ckXbB_zruGk7orrg4w/exec?cust=${customer}&row=${row}`;
-  const res=await fetch(url);
-  const data=await res.json();
-  if(data.error) throw new Error();
+  const url = `${API_URL}?cust=${encodeURIComponent(customer || "")}&row=${encodeURIComponent(row || "")}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
   return data;
 }
 
 // TIME CHECK
 function handleTime(timestamp){
-
   const now = new Date();
   const ts = new Date(timestamp);
   const diff = (now - ts)/1000;
@@ -146,7 +155,8 @@ function handleTime(timestamp){
 
     const int = setInterval(()=>{
       sec--;
-      document.getElementById("count").innerText = sec;
+      const countEl = document.getElementById("count");
+      if (countEl) countEl.innerText = sec;
 
       if(sec <= 0){
         clearInterval(int);
@@ -175,93 +185,201 @@ init();
 async function init(){
   try{
     const data = await fetchData();
-
     clearInterval(interval);
 
     if(handleTime(data.timestamp)) return;
 
-    load(data);
-
-  }catch{
+    await load(data);
+  }catch(err){
     clearInterval(interval);
+    console.error(err);
     noData();
   }
 }
 
 // LOAD
-function load(data){
+async function load(data){
+  let html = "";
 
-let html="";
+  html += await renderModel(data.model1, "🚘 Model 1");
+  html += await renderModel(data.model2, "🚘 Model 2");
+  html += await renderModel(data.model3, "🚘 Model 3");
 
-function renderModel(model, url, label){
+  html += `
+  <div class="card">
+    <button class="btn" onclick="send()">💬 Send WhatsApp</button>
 
-  if(model && !url){
+    <div class="info-box">
+      <strong>📤 How to share Quotation:</strong>
+      <ol>
+        <li>👆 Long Press on image</li>
+        <li>📋 Copy Image</li>
+        <li>📤 Share → WhatsApp</li>
+        <li>✅ Send</li>
+      </ol>
+    </div>
+  </div>`;
+
+  document.getElementById("content").innerHTML = html;
+}
+
+async function renderModel(model, label){
+  if(!model || !model.model){
+    return "";
+  }
+
+  try{
+    const imageSrc = await generateQuoteImage(model);
+
+    return `
+    <div class="card">
+      <div class="model-title">${label}</div>
+
+      <div class="image-container" onclick="window.open('${imageSrc}','_blank')">
+        <img class="quote-img" src="${imageSrc}" alt="${label}">
+      </div>
+    </div>`;
+  }catch(err){
+    console.error("Render failed:", err);
+
     return `
     <div class="card">
       <div class="model-title">${label}</div>
       <p>⚠️ Quotation not generated</p>
 
       <div class="info-box">
-      📱 Go to AppSheet → <br><br>
-      👉 <span class="highlight">Select Customer ${name}</span><br>
-      ✏️ Edit → Save → Reopen
+        📱 Go to AppSheet → <br><br>
+        👉 <span class="highlight">Select Customer ${escapeHtml(name)}</span><br>
+        ✏️ Edit → Save → Reopen
       </div>
     </div>`;
   }
-
-  if(url){
-
-    const img=`https://drive.google.com/thumbnail?id=${url}&sz=w1000`;
-    const full=`https://drive.google.com/uc?export=view&id=${url}`;
-
-    return `
-    <div class="card">
-      <div class="model-title">${label}</div>
-
-      <div class="image-container" onclick="window.open('${full}','_blank')">
-        <img class="quote-img" src="${img}">
-      </div>
-    </div>`;
-  }
-
-  return "";
 }
 
-html += renderModel(data.model1, data.url1, "🚘 Model 1");
-html += renderModel(data.model2, data.url2, "🚘 Model 2");
-html += renderModel(data.model3, data.url3, "🚘 Model 3");
+async function generateQuoteImage(modelData){
+  const bg = await loadImage(TEMPLATE_IMAGE_URL);
 
-html += `
-<div class="card">
-<button class="btn" onclick="send()">💬 Send WhatsApp</button>
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
 
-<div class="info-box">
-<strong>📤 How to share Quotation:</strong>
-<ol>
-<li>👆 Long Press on image</li>
-<li>📋 Copy Image</li>
-<li>📤 Share → WhatsApp</li>
-<li>✅ Send</li>
-</ol>
-</div>
+  canvas.width = bg.width;
+  canvas.height = bg.height;
 
-</div>`;
+  ctx.drawImage(bg, 0, 0, bg.width, bg.height);
 
-document.getElementById("content").innerHTML = html;
+  // TEXT STYLE
+  ctx.fillStyle = "#111111";
+  ctx.textBaseline = "middle";
+  ctx.font = "24px Arial";
 
-// IMAGE FALLBACK
-document.querySelectorAll(".quote-img").forEach(img=>{
-img.onerror=function(){
-img.src=img.src.replace("thumbnail","uc?export=view&id=");
-};
-});
+  // TOP INFO
+  drawText(ctx, modelData.simpleDate || "", 120, 158);
+  drawText(ctx, modelData.quoteNo || "", 520, 158);
 
+  // CUSTOMER INFO
+  drawText(ctx, modelData.customerName || "", 90, 186);
+  drawWrappedText(ctx, modelData.address || "", 90, 224, 320, 28);
+  drawText(ctx, modelData.customerWhatsappNo || "", 90, 262);
+  drawText(ctx, modelData.dseName || "", 90, 300);
+  drawText(ctx, modelData.dseWaNo || "", 90, 338);
+
+  // MODEL NAME
+  drawText(ctx, modelData.model || "", 90, 392);
+
+  // PRICES COLUMN
+  ctx.font = "22px Arial";
+  drawRightText(ctx, formatMoney(modelData.exShowroom), 560, 430);
+  drawRightText(ctx, formatMoney(modelData.rtoRegi), 560, 468);
+  drawRightText(ctx, formatMoney(modelData.incidentalCharges), 560, 506);
+  drawRightText(ctx, formatMoney(modelData.insurance), 560, 544);
+  drawRightText(ctx, formatMoney(modelData.hypo), 560, 582);
+  drawRightText(ctx, formatMoney(modelData.accessoriesGood), 560, 620);
+  drawRightText(ctx, formatMoney(modelData.total), 560, 658);
+
+  // SCHEME 1
+  drawRightText(ctx, formatMoney(modelData.scheme1ExShowroom), 690, 430);
+  drawRightText(ctx, formatMoney(modelData.scheme1RtoRegi), 690, 468);
+  drawRightText(ctx, formatMoney(modelData.scheme1IncidentalCharges), 690, 506);
+  drawRightText(ctx, formatMoney(modelData.scheme1Insurance), 690, 544);
+  drawRightText(ctx, formatMoney(modelData.scheme1Hypo), 690, 582);
+  drawRightText(ctx, formatMoney(modelData.scheme1AccessoriesGood), 690, 620);
+  drawRightText(ctx, formatMoney(modelData.scheme1Total), 690, 658);
+
+  // SCHEME 2
+  drawRightText(ctx, formatMoney(modelData.scheme2ExShowroom), 820, 430);
+  drawRightText(ctx, formatMoney(modelData.scheme2RtoRegi), 820, 468);
+  drawRightText(ctx, formatMoney(modelData.scheme2IncidentalCharges), 820, 506);
+  drawRightText(ctx, formatMoney(modelData.scheme2Insurance), 820, 544);
+  drawRightText(ctx, formatMoney(modelData.scheme2Hypo), 820, 582);
+  drawRightText(ctx, formatMoney(modelData.scheme2AccessoriesGood), 820, 620);
+  drawRightText(ctx, formatMoney(modelData.scheme2Total), 820, 658);
+
+  return canvas.toDataURL("image/png");
+}
+
+function loadImage(src){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = ()=>resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function drawText(ctx, text, x, y){
+  ctx.fillText(String(text || ""), x, y);
+}
+
+function drawRightText(ctx, text, x, y){
+  const val = String(text || "");
+  const width = ctx.measureText(val).width;
+  ctx.fillText(val, x - width, y);
+}
+
+function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight){
+  const str = String(text || "");
+  if(!str) return;
+
+  const words = str.split(/\s+/);
+  let line = "";
+  let currentY = y;
+
+  for(const word of words){
+    const testLine = line + word + " ";
+    const testWidth = ctx.measureText(testLine).width;
+
+    if(testWidth > maxWidth && line){
+      ctx.fillText(line.trim(), x, currentY);
+      line = word + " ";
+      currentY += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+
+  if(line.trim()){
+    ctx.fillText(line.trim(), x, currentY);
+  }
+}
+
+function formatMoney(val){
+  if(val === null || val === undefined || val === "") return "";
+  return String(val);
+}
+
+function escapeHtml(str){
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 // WHATSAPP
 function send(){
-
-const msg=`🙏 Hello ${name},
+  const msg=`🙏 Hello ${name},
 
 Welcome to *Chavan Automobiles* 🚘
 
@@ -275,18 +393,17 @@ For quick support, contact:
 Thank you for choosing us!
 *Chavan Automobiles Team*`;
 
-window.location.href=`https://wa.me/${customer}?text=${encodeURIComponent(msg)}`;
+  window.location.href=`https://wa.me/${customer}?text=${encodeURIComponent(msg)}`;
 }
 
 // NO DATA
 function noData(){
-document.getElementById("content").innerHTML =
-`<div class="card error">
-<h3>⚠️ Quotation Not Found</h3>
-<p>📱 Go to AppSheet → ✏️ Edit → Save → Reopen</p>
-</div>`;
+  document.getElementById("content").innerHTML =
+  `<div class="card error">
+    <h3>⚠️ Quotation Not Found</h3>
+    <p>📱 Go to AppSheet → ✏️ Edit → Save → Reopen</p>
+  </div>`;
 }
-
 </script>
 
 </body>
