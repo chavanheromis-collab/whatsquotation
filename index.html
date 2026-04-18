@@ -32,20 +32,36 @@ body{
 }
 
 .image-container{
-  min-height:200px;
   display:flex;
   align-items:center;
   justify-content:center;
   cursor:pointer;
 }
 
-.quote-img{
+.quote-frame{
+  position:relative;
   width:100%;
-  height:auto;
-  object-fit:contain;
-  display:block;
+  aspect-ratio: 1000 / 1414;
+  background-image:url("https://drive.google.com/thumbnail?id=16gbJoCR6DzFHd9lA55KaeR_1btWKH1b2&sz=w2000");
+  background-size:contain;
+  background-repeat:no-repeat;
+  background-position:center top;
   border-radius:10px;
+  overflow:hidden;
 }
+
+.qtext{
+  position:absolute;
+  color:#111;
+  font-family:Arial,sans-serif;
+  line-height:1.2;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+
+.small{font-size:1.9vw;}
+.medium{font-size:2.15vw;}
+.large{font-size:2.35vw;font-weight:bold;}
 
 .btn{
   width:100%;
@@ -77,8 +93,10 @@ body{
 
 .error{text-align:center;padding:20px;}
 
-canvas{
-  display:none;
+@media (min-width: 450px){
+  .small{font-size:8px;}
+  .medium{font-size:10px;}
+  .large{font-size:12px;}
 }
 </style>
 </head>
@@ -97,11 +115,7 @@ canvas{
 </div>
 
 <script>
-// ===========================
-// CONFIG
-// ===========================
 const API_URL = "https://script.google.com/macros/s/AKfycbyr70myZuDAfCsVCdPlNcgskFTydg236p6kdNrbnB_1JaFvIRL2ckXbB_zruGk7orrg4w/exec";
-const TEMPLATE_IMAGE_URL = "https://drive.google.com/uc?export=view&id=16gbJoCR6DzFHd9lA55KaeR_1btWKH1b2";
 
 // PARAMS
 const params = new URLSearchParams(window.location.search);
@@ -144,8 +158,8 @@ function handleTime(timestamp){
   const ts = new Date(timestamp);
   const diff = (now - ts)/1000;
 
-  if(diff < 30){
-    let sec = 15;
+  if(diff < 10){
+    let sec = 8;
 
     document.getElementById("content").innerHTML =
     `<div class="loading">
@@ -155,24 +169,14 @@ function handleTime(timestamp){
 
     const int = setInterval(()=>{
       sec--;
-      const countEl = document.getElementById("count");
-      if (countEl) countEl.innerText = sec;
-
+      const el = document.getElementById("count");
+      if(el) el.innerText = sec;
       if(sec <= 0){
         clearInterval(int);
         location.reload();
       }
     },1000);
 
-    return true;
-  }
-
-  if(diff < 60){
-    document.getElementById("content").innerHTML =
-    `<div class="card">
-      <h3>🚀 Quotation Ready</h3>
-      <p>🔄 Please refresh this page</p>
-    </div>`;
     return true;
   }
 
@@ -189,21 +193,22 @@ async function init(){
 
     if(handleTime(data.timestamp)) return;
 
-    await load(data);
+    load(data);
+
   }catch(err){
     clearInterval(interval);
     console.error(err);
-    noData();
+    noData(err.message || "Failed");
   }
 }
 
 // LOAD
-async function load(data){
+function load(data){
   let html = "";
 
-  html += await renderModel(data.model1, "🚘 Model 1");
-  html += await renderModel(data.model2, "🚘 Model 2");
-  html += await renderModel(data.model3, "🚘 Model 3");
+  html += renderModel(data.model1, "🚘 Model 1");
+  html += renderModel(data.model2, "🚘 Model 2");
+  html += renderModel(data.model3, "🚘 Model 3");
 
   html += `
   <div class="card">
@@ -212,8 +217,8 @@ async function load(data){
     <div class="info-box">
       <strong>📤 How to share Quotation:</strong>
       <ol>
-        <li>👆 Long Press on image</li>
-        <li>📋 Copy Image</li>
+        <li>👆 Long Press on quotation</li>
+        <li>📋 Copy Image / Screenshot</li>
         <li>📤 Share → WhatsApp</li>
         <li>✅ Send</li>
       </ol>
@@ -223,158 +228,55 @@ async function load(data){
   document.getElementById("content").innerHTML = html;
 }
 
-async function renderModel(model, label){
+function renderModel(model, label){
   if(!model || !model.model){
     return "";
   }
 
-  try{
-    const imageSrc = await generateQuoteImage(model);
+  return `
+  <div class="card">
+    <div class="model-title">${label}</div>
+    <div class="image-container">
+      <div class="quote-frame">
 
-    return `
-    <div class="card">
-      <div class="model-title">${label}</div>
+        <div class="qtext medium" style="left:12%;top:10.8%;width:18%;">${esc(model.simpleDate)}</div>
+        <div class="qtext medium" style="left:49%;top:10.8%;width:20%;">${esc(model.quoteNo)}</div>
 
-      <div class="image-container" onclick="window.open('${imageSrc}','_blank')">
-        <img class="quote-img" src="${imageSrc}" alt="${label}">
+        <div class="qtext medium" style="left:8.8%;top:13.0%;width:28%;">${esc(model.customerName)}</div>
+        <div class="qtext small"  style="left:8.8%;top:15.8%;width:28%;">${esc(model.address)}</div>
+        <div class="qtext medium" style="left:8.8%;top:18.7%;width:28%;">${esc(model.customerWhatsappNo)}</div>
+        <div class="qtext medium" style="left:8.8%;top:21.5%;width:28%;">${esc(model.dseName)}</div>
+        <div class="qtext medium" style="left:8.8%;top:24.3%;width:28%;">${esc(model.dseWaNo)}</div>
+
+        <div class="qtext medium" style="left:8.8%;top:28.3%;width:30%;">${esc(model.model)}</div>
+
+        <div class="qtext medium" style="left:44%;top:30.9%;width:12%;text-align:right;">${esc(model.exShowroom)}</div>
+        <div class="qtext medium" style="left:44%;top:33.6%;width:12%;text-align:right;">${esc(model.rtoRegi)}</div>
+        <div class="qtext medium" style="left:44%;top:36.3%;width:12%;text-align:right;">${esc(model.incidentalCharges)}</div>
+        <div class="qtext medium" style="left:44%;top:39.0%;width:12%;text-align:right;">${esc(model.insurance)}</div>
+        <div class="qtext medium" style="left:44%;top:41.8%;width:12%;text-align:right;">${esc(model.hypo)}</div>
+        <div class="qtext medium" style="left:44%;top:44.5%;width:12%;text-align:right;">${esc(model.accessoriesGood)}</div>
+        <div class="qtext large"  style="left:44%;top:47.2%;width:12%;text-align:right;">${esc(model.total)}</div>
+
+        <div class="qtext medium" style="left:58%;top:30.9%;width:11%;text-align:right;">${esc(model.scheme1ExShowroom)}</div>
+        <div class="qtext medium" style="left:58%;top:33.6%;width:11%;text-align:right;">${esc(model.scheme1RtoRegi)}</div>
+        <div class="qtext medium" style="left:58%;top:36.3%;width:11%;text-align:right;">${esc(model.scheme1IncidentalCharges)}</div>
+        <div class="qtext medium" style="left:58%;top:39.0%;width:11%;text-align:right;">${esc(model.scheme1Insurance)}</div>
+        <div class="qtext medium" style="left:58%;top:41.8%;width:11%;text-align:right;">${esc(model.scheme1Hypo)}</div>
+        <div class="qtext medium" style="left:58%;top:44.5%;width:11%;text-align:right;">${esc(model.scheme1AccessoriesGood)}</div>
+        <div class="qtext large"  style="left:58%;top:47.2%;width:11%;text-align:right;">${esc(model.scheme1Total)}</div>
+
+        <div class="qtext medium" style="left:71.5%;top:30.9%;width:11%;text-align:right;">${esc(model.scheme2ExShowroom)}</div>
+        <div class="qtext medium" style="left:71.5%;top:33.6%;width:11%;text-align:right;">${esc(model.scheme2RtoRegi)}</div>
+        <div class="qtext medium" style="left:71.5%;top:36.3%;width:11%;text-align:right;">${esc(model.scheme2IncidentalCharges)}</div>
+        <div class="qtext medium" style="left:71.5%;top:39.0%;width:11%;text-align:right;">${esc(model.scheme2Insurance)}</div>
+        <div class="qtext medium" style="left:71.5%;top:41.8%;width:11%;text-align:right;">${esc(model.scheme2Hypo)}</div>
+        <div class="qtext medium" style="left:71.5%;top:44.5%;width:11%;text-align:right;">${esc(model.scheme2AccessoriesGood)}</div>
+        <div class="qtext large"  style="left:71.5%;top:47.2%;width:11%;text-align:right;">${esc(model.scheme2Total)}</div>
+
       </div>
-    </div>`;
-  }catch(err){
-    console.error("Render failed:", err);
-
-    return `
-    <div class="card">
-      <div class="model-title">${label}</div>
-      <p>⚠️ Quotation not generated</p>
-
-      <div class="info-box">
-        📱 Go to AppSheet → <br><br>
-        👉 <span class="highlight">Select Customer ${escapeHtml(name)}</span><br>
-        ✏️ Edit → Save → Reopen
-      </div>
-    </div>`;
-  }
-}
-
-async function generateQuoteImage(modelData){
-  const bg = await loadImage(TEMPLATE_IMAGE_URL);
-
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-
-  canvas.width = bg.width;
-  canvas.height = bg.height;
-
-  ctx.drawImage(bg, 0, 0, bg.width, bg.height);
-
-  // TEXT STYLE
-  ctx.fillStyle = "#111111";
-  ctx.textBaseline = "middle";
-  ctx.font = "24px Arial";
-
-  // TOP INFO
-  drawText(ctx, modelData.simpleDate || "", 120, 158);
-  drawText(ctx, modelData.quoteNo || "", 520, 158);
-
-  // CUSTOMER INFO
-  drawText(ctx, modelData.customerName || "", 90, 186);
-  drawWrappedText(ctx, modelData.address || "", 90, 224, 320, 28);
-  drawText(ctx, modelData.customerWhatsappNo || "", 90, 262);
-  drawText(ctx, modelData.dseName || "", 90, 300);
-  drawText(ctx, modelData.dseWaNo || "", 90, 338);
-
-  // MODEL NAME
-  drawText(ctx, modelData.model || "", 90, 392);
-
-  // PRICES COLUMN
-  ctx.font = "22px Arial";
-  drawRightText(ctx, formatMoney(modelData.exShowroom), 560, 430);
-  drawRightText(ctx, formatMoney(modelData.rtoRegi), 560, 468);
-  drawRightText(ctx, formatMoney(modelData.incidentalCharges), 560, 506);
-  drawRightText(ctx, formatMoney(modelData.insurance), 560, 544);
-  drawRightText(ctx, formatMoney(modelData.hypo), 560, 582);
-  drawRightText(ctx, formatMoney(modelData.accessoriesGood), 560, 620);
-  drawRightText(ctx, formatMoney(modelData.total), 560, 658);
-
-  // SCHEME 1
-  drawRightText(ctx, formatMoney(modelData.scheme1ExShowroom), 690, 430);
-  drawRightText(ctx, formatMoney(modelData.scheme1RtoRegi), 690, 468);
-  drawRightText(ctx, formatMoney(modelData.scheme1IncidentalCharges), 690, 506);
-  drawRightText(ctx, formatMoney(modelData.scheme1Insurance), 690, 544);
-  drawRightText(ctx, formatMoney(modelData.scheme1Hypo), 690, 582);
-  drawRightText(ctx, formatMoney(modelData.scheme1AccessoriesGood), 690, 620);
-  drawRightText(ctx, formatMoney(modelData.scheme1Total), 690, 658);
-
-  // SCHEME 2
-  drawRightText(ctx, formatMoney(modelData.scheme2ExShowroom), 820, 430);
-  drawRightText(ctx, formatMoney(modelData.scheme2RtoRegi), 820, 468);
-  drawRightText(ctx, formatMoney(modelData.scheme2IncidentalCharges), 820, 506);
-  drawRightText(ctx, formatMoney(modelData.scheme2Insurance), 820, 544);
-  drawRightText(ctx, formatMoney(modelData.scheme2Hypo), 820, 582);
-  drawRightText(ctx, formatMoney(modelData.scheme2AccessoriesGood), 820, 620);
-  drawRightText(ctx, formatMoney(modelData.scheme2Total), 820, 658);
-
-  return canvas.toDataURL("image/png");
-}
-
-function loadImage(src){
-  return new Promise((resolve, reject)=>{
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = ()=>resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
-}
-
-function drawText(ctx, text, x, y){
-  ctx.fillText(String(text || ""), x, y);
-}
-
-function drawRightText(ctx, text, x, y){
-  const val = String(text || "");
-  const width = ctx.measureText(val).width;
-  ctx.fillText(val, x - width, y);
-}
-
-function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight){
-  const str = String(text || "");
-  if(!str) return;
-
-  const words = str.split(/\s+/);
-  let line = "";
-  let currentY = y;
-
-  for(const word of words){
-    const testLine = line + word + " ";
-    const testWidth = ctx.measureText(testLine).width;
-
-    if(testWidth > maxWidth && line){
-      ctx.fillText(line.trim(), x, currentY);
-      line = word + " ";
-      currentY += lineHeight;
-    } else {
-      line = testLine;
-    }
-  }
-
-  if(line.trim()){
-    ctx.fillText(line.trim(), x, currentY);
-  }
-}
-
-function formatMoney(val){
-  if(val === null || val === undefined || val === "") return "";
-  return String(val);
-}
-
-function escapeHtml(str){
-  return String(str || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    </div>
+  </div>`;
 }
 
 // WHATSAPP
@@ -396,12 +298,21 @@ Thank you for choosing us!
   window.location.href=`https://wa.me/${customer}?text=${encodeURIComponent(msg)}`;
 }
 
+function esc(v){
+  return String(v || "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
 // NO DATA
-function noData(){
+function noData(msg){
   document.getElementById("content").innerHTML =
   `<div class="card error">
     <h3>⚠️ Quotation Not Found</h3>
-    <p>📱 Go to AppSheet → ✏️ Edit → Save → Reopen</p>
+    <p>${esc(msg || "📱 Go to AppSheet → ✏️ Edit → Save → Reopen")}</p>
   </div>`;
 }
 </script>
