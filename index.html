@@ -32,36 +32,18 @@ body{
 }
 
 .image-container{
+  min-height:200px;
   display:flex;
   align-items:center;
   justify-content:center;
   cursor:pointer;
 }
 
-.quote-frame{
-  position:relative;
+.quote-img{
   width:100%;
-  aspect-ratio: 1000 / 1414;
-  background-image:url("https://drive.google.com/thumbnail?id=16gbJoCR6DzFHd9lA55KaeR_1btWKH1b2&sz=w2000");
-  background-size:contain;
-  background-repeat:no-repeat;
-  background-position:center top;
-  border-radius:10px;
-  overflow:hidden;
+  max-height:500px;
+  object-fit:contain;
 }
-
-.qtext{
-  position:absolute;
-  color:#111;
-  font-family:Arial,sans-serif;
-  line-height:1.2;
-  white-space:pre-wrap;
-  word-break:break-word;
-}
-
-.small{font-size:1.9vw;}
-.medium{font-size:2.15vw;}
-.large{font-size:2.35vw;font-weight:bold;}
 
 .btn{
   width:100%;
@@ -71,7 +53,6 @@ body{
   border:none;
   border-radius:12px;
   font-weight:bold;
-  cursor:pointer;
 }
 
 .info-box{
@@ -92,30 +73,25 @@ body{
 }
 
 .error{text-align:center;padding:20px;}
-
-@media (min-width: 450px){
-  .small{font-size:8px;}
-  .medium{font-size:10px;}
-  .large{font-size:12px;}
-}
 </style>
 </head>
 
 <body>
 
 <div class="container">
-  <div class="card">
-    <div id="content">
-      <div class="loading">
-        <h1>⏳ Preparing Your Quotation...</h1>
-        <p id="loadingText">🔍 Checking your details...</p>
-      </div>
-    </div>
-  </div>
+<div class="card">
+
+<div id="content">
+<div class="loading">
+  <h1>⏳ Preparing Your Quotation...</h1>
+  <p id="loadingText">🔍 Checking your details...</p>
+</div>
+</div>
+
+</div>
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyr70myZuDAfCsVCdPlNcgskFTydg236p6kdNrbnB_1JaFvIRL2ckXbB_zruGk7orrg4w/exec";
 
 // PARAMS
 const params = new URLSearchParams(window.location.search);
@@ -145,21 +121,22 @@ const interval=setInterval(()=>{
 
 // FETCH
 async function fetchData(){
-  const url = `${API_URL}?cust=${encodeURIComponent(customer || "")}&row=${encodeURIComponent(row || "")}`;
-  const res = await fetch(url);
-  const data = await res.json();
-  if(data.error) throw new Error(data.error);
+  const url=`https://script.google.com/macros/s/AKfycbyr70myZuDAfCsVCdPlNcgskFTydg236p6kdNrbnB_1JaFvIRL2ckXbB_zruGk7orrg4w/exec?cust=${customer}&row=${row}`;
+  const res=await fetch(url);
+  const data=await res.json();
+  if(data.error) throw new Error();
   return data;
 }
 
 // TIME CHECK
 function handleTime(timestamp){
+
   const now = new Date();
   const ts = new Date(timestamp);
   const diff = (now - ts)/1000;
 
-  if(diff < 10){
-    let sec = 8;
+  if(diff < 30){
+    let sec = 15;
 
     document.getElementById("content").innerHTML =
     `<div class="loading">
@@ -169,14 +146,23 @@ function handleTime(timestamp){
 
     const int = setInterval(()=>{
       sec--;
-      const el = document.getElementById("count");
-      if(el) el.innerText = sec;
+      document.getElementById("count").innerText = sec;
+
       if(sec <= 0){
         clearInterval(int);
         location.reload();
       }
     },1000);
 
+    return true;
+  }
+
+  if(diff < 60){
+    document.getElementById("content").innerHTML =
+    `<div class="card">
+      <h3>🚀 Quotation Ready</h3>
+      <p>🔄 Please refresh this page</p>
+    </div>`;
     return true;
   }
 
@@ -189,99 +175,93 @@ init();
 async function init(){
   try{
     const data = await fetchData();
+
     clearInterval(interval);
 
     if(handleTime(data.timestamp)) return;
 
     load(data);
 
-  }catch(err){
+  }catch{
     clearInterval(interval);
-    console.error(err);
-    noData(err.message || "Failed");
+    noData();
   }
 }
 
 // LOAD
 function load(data){
-  let html = "";
 
-  html += renderModel(data.model1, "🚘 Model 1");
-  html += renderModel(data.model2, "🚘 Model 2");
-  html += renderModel(data.model3, "🚘 Model 3");
+let html="";
 
-  html += `
-  <div class="card">
-    <button class="btn" onclick="send()">💬 Send WhatsApp</button>
+function renderModel(model, url, label){
 
-    <div class="info-box">
-      <strong>📤 How to share Quotation:</strong>
-      <ol>
-        <li>👆 Long Press on quotation</li>
-        <li>📋 Copy Image / Screenshot</li>
-        <li>📤 Share → WhatsApp</li>
-        <li>✅ Send</li>
-      </ol>
-    </div>
-  </div>`;
+  if(model && !url){
+    return `
+    <div class="card">
+      <div class="model-title">${label}</div>
+      <p>⚠️ Quotation not generated</p>
 
-  document.getElementById("content").innerHTML = html;
-}
-
-function renderModel(model, label){
-  if(!model || !model.model){
-    return "";
+      <div class="info-box">
+      📱 Go to AppSheet → <br><br>
+      👉 <span class="highlight">Select Customer ${name}</span><br>
+      ✏️ Edit → Save → Reopen
+      </div>
+    </div>`;
   }
 
-  return `
-  <div class="card">
-    <div class="model-title">${label}</div>
-    <div class="image-container">
-      <div class="quote-frame">
+  if(url){
 
-        <div class="qtext medium" style="left:12%;top:10.8%;width:18%;">${esc(model.simpleDate)}</div>
-        <div class="qtext medium" style="left:49%;top:10.8%;width:20%;">${esc(model.quoteNo)}</div>
+    const img=`https://drive.google.com/thumbnail?id=${url}&sz=w1000`;
+    const full=`https://drive.google.com/uc?export=view&id=${url}`;
 
-        <div class="qtext medium" style="left:8.8%;top:13.0%;width:28%;">${esc(model.customerName)}</div>
-        <div class="qtext small"  style="left:8.8%;top:15.8%;width:28%;">${esc(model.address)}</div>
-        <div class="qtext medium" style="left:8.8%;top:18.7%;width:28%;">${esc(model.customerWhatsappNo)}</div>
-        <div class="qtext medium" style="left:8.8%;top:21.5%;width:28%;">${esc(model.dseName)}</div>
-        <div class="qtext medium" style="left:8.8%;top:24.3%;width:28%;">${esc(model.dseWaNo)}</div>
+    return `
+    <div class="card">
+      <div class="model-title">${label}</div>
 
-        <div class="qtext medium" style="left:8.8%;top:28.3%;width:30%;">${esc(model.model)}</div>
-
-        <div class="qtext medium" style="left:44%;top:30.9%;width:12%;text-align:right;">${esc(model.exShowroom)}</div>
-        <div class="qtext medium" style="left:44%;top:33.6%;width:12%;text-align:right;">${esc(model.rtoRegi)}</div>
-        <div class="qtext medium" style="left:44%;top:36.3%;width:12%;text-align:right;">${esc(model.incidentalCharges)}</div>
-        <div class="qtext medium" style="left:44%;top:39.0%;width:12%;text-align:right;">${esc(model.insurance)}</div>
-        <div class="qtext medium" style="left:44%;top:41.8%;width:12%;text-align:right;">${esc(model.hypo)}</div>
-        <div class="qtext medium" style="left:44%;top:44.5%;width:12%;text-align:right;">${esc(model.accessoriesGood)}</div>
-        <div class="qtext large"  style="left:44%;top:47.2%;width:12%;text-align:right;">${esc(model.total)}</div>
-
-        <div class="qtext medium" style="left:58%;top:30.9%;width:11%;text-align:right;">${esc(model.scheme1ExShowroom)}</div>
-        <div class="qtext medium" style="left:58%;top:33.6%;width:11%;text-align:right;">${esc(model.scheme1RtoRegi)}</div>
-        <div class="qtext medium" style="left:58%;top:36.3%;width:11%;text-align:right;">${esc(model.scheme1IncidentalCharges)}</div>
-        <div class="qtext medium" style="left:58%;top:39.0%;width:11%;text-align:right;">${esc(model.scheme1Insurance)}</div>
-        <div class="qtext medium" style="left:58%;top:41.8%;width:11%;text-align:right;">${esc(model.scheme1Hypo)}</div>
-        <div class="qtext medium" style="left:58%;top:44.5%;width:11%;text-align:right;">${esc(model.scheme1AccessoriesGood)}</div>
-        <div class="qtext large"  style="left:58%;top:47.2%;width:11%;text-align:right;">${esc(model.scheme1Total)}</div>
-
-        <div class="qtext medium" style="left:71.5%;top:30.9%;width:11%;text-align:right;">${esc(model.scheme2ExShowroom)}</div>
-        <div class="qtext medium" style="left:71.5%;top:33.6%;width:11%;text-align:right;">${esc(model.scheme2RtoRegi)}</div>
-        <div class="qtext medium" style="left:71.5%;top:36.3%;width:11%;text-align:right;">${esc(model.scheme2IncidentalCharges)}</div>
-        <div class="qtext medium" style="left:71.5%;top:39.0%;width:11%;text-align:right;">${esc(model.scheme2Insurance)}</div>
-        <div class="qtext medium" style="left:71.5%;top:41.8%;width:11%;text-align:right;">${esc(model.scheme2Hypo)}</div>
-        <div class="qtext medium" style="left:71.5%;top:44.5%;width:11%;text-align:right;">${esc(model.scheme2AccessoriesGood)}</div>
-        <div class="qtext large"  style="left:71.5%;top:47.2%;width:11%;text-align:right;">${esc(model.scheme2Total)}</div>
-
+      <div class="image-container" onclick="window.open('${full}','_blank')">
+        <img class="quote-img" src="${img}">
       </div>
-    </div>
-  </div>`;
+    </div>`;
+  }
+
+  return "";
+}
+
+html += renderModel(data.model1, data.url1, "🚘 Model 1");
+html += renderModel(data.model2, data.url2, "🚘 Model 2");
+html += renderModel(data.model3, data.url3, "🚘 Model 3");
+
+html += `
+<div class="card">
+<button class="btn" onclick="send()">💬 Send WhatsApp</button>
+
+<div class="info-box">
+<strong>📤 How to share Quotation:</strong>
+<ol>
+<li>👆 Long Press on image</li>
+<li>📋 Copy Image</li>
+<li>📤 Share → WhatsApp</li>
+<li>✅ Send</li>
+</ol>
+</div>
+
+</div>`;
+
+document.getElementById("content").innerHTML = html;
+
+// IMAGE FALLBACK
+document.querySelectorAll(".quote-img").forEach(img=>{
+img.onerror=function(){
+img.src=img.src.replace("thumbnail","uc?export=view&id=");
+};
+});
+
 }
 
 // WHATSAPP
 function send(){
-  const msg=`🙏 Hello ${name},
+
+const msg=`🙏 Hello ${name},
 
 Welcome to *Chavan Automobiles* 🚘
 
@@ -295,26 +275,18 @@ For quick support, contact:
 Thank you for choosing us!
 *Chavan Automobiles Team*`;
 
-  window.location.href=`https://wa.me/${customer}?text=${encodeURIComponent(msg)}`;
-}
-
-function esc(v){
-  return String(v || "")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#039;");
+window.location.href=`https://wa.me/${customer}?text=${encodeURIComponent(msg)}`;
 }
 
 // NO DATA
-function noData(msg){
-  document.getElementById("content").innerHTML =
-  `<div class="card error">
-    <h3>⚠️ Quotation Not Found</h3>
-    <p>${esc(msg || "📱 Go to AppSheet → ✏️ Edit → Save → Reopen")}</p>
-  </div>`;
+function noData(){
+document.getElementById("content").innerHTML =
+`<div class="card error">
+<h3>⚠️ Quotation Not Found</h3>
+<p>📱 Go to AppSheet → ✏️ Edit → Save → Reopen</p>
+</div>`;
 }
+
 </script>
 
 </body>
